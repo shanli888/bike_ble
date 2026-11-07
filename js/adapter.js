@@ -1,233 +1,234 @@
 /* =========================================================================
- * adapter.js — LVBU / WePower 协议适配层
+ * adapter.js — LVBU 3.4.0 文本协议适配层
  *
- * ⚠️ 这是唯一需要按真实协议修改的文件。
- * 拿到协议文档后：
- *   1. 修正 CMDS 命令字
- *   2. 修正 REPORT_FIELDS 字段偏移（或在「设置」里用实验字段表覆盖）
- *   3. 若帧格式特殊，覆盖 encode()/decode()
- * 设置页里的「协议参数」会实时覆盖 header/len/checksum/字节序，无需改代码。
+ * 协议格式（已实机验证）：
+ *   命令帧：`<CMD>F<IMEI>[<DATA>]` 以 ASCII/UTF-8 字节写入 FFE1
+ *   回复帧：十六进制字符串，同样格式
+ *
+ * 说明：\ *   - IMEI 是电机 IMEI，不是手机 IMEI；文档中已确认固定为 866855030090179
+ *   - 写入/通知均为 FFE1 同一特征
+ *   - 回复匹配：前 `len` 字符包含命令码 + F + IMEI
+ *   - 电压 C0 回复：总长 24 个十六进制字符，状态在 19-20 位，末 4 位 /10
  *
  * 纯函数 + 无 DOM 依赖，可在 Node 中做契约测试。
  * ========================================================================= */
 (function (root, factory) {
-  const isNode = typeof module === 'object' && module.exports;
-  const base = isNode ? root : root.LVBU;
-  const util = isNode ? null : base.util;
-  const protocol = isNode ? null : base.protocol;
-  const api = factory({
-    util: isNode ? null : util,
-    protocol: isNode ? null : protocol,
-    requireLocal: isNode
-      ? (name) => require('./' + name + '.js')
-      : null,
-  });
-  if (isNode) module.exports = api;
-  else base.adapter = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (deps) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else (root.LVBU = root.LVBU || {}).adapter = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  // 兜底：Node 下延迟 require，浏览器下用全局
-  const U = deps.util || deps.requireLocal('util');
-  const P = deps.protocol || deps.requireLocal('protocol');
+  /** 固定的电机 IMEI（可在设置中覆盖） */
+  const DEFAULT_IMEI = '866855030090179';
 
-  /* ======================= 1. 命令字 ======================= */
-  // 逆向文档中的“推测帧”已解出命令字；载荷待实测确认。
+  /* ======================= 命令表 ======================= */
   const CMDS = {
-    restart: 0x01, // AA 55 01 01 FE
-    setWheel: 0x02, // AA 55 04 02 <inch> <dia_hi> <dia_lo> <cs>
-    queryGyro: 0x10, // AA 55 01 10 EF
-    calibrateGyro: 0x11, // AA 55 01 11 EE
-    // 助力相关（依据真实协议 README）
-    assistLevel: 0x20, // 助力等级 0~5（0=关闭助力）
-    assistMode: 0x21, // 骑行模式：通勤/运动/爬坡/休闲/手动
-    assistStop: 0x22, // 停止助力
-    assistPercent: 0x23, // 手动模式下的助力百分比 0~100
-    speedLimit: 0x30, // 限速
-    headLamp: 0x31, // 头灯
+    voltage: 'C0', // 电压查询
+    speed: 'BF', // 速度查询
+    temperature: 'C1', // 控制器温度查询
+    trip: 'B1', // 本次骑行记录
+    gyro: 'BD', // 陀螺仪角度
+    climb: 'C6', // 爬坡参数
+    setMode: 'C4', // 设置助力模式
+    setPower: 'A5', // 设置手动功率百分比（边界有疑，当前禁用）
+    setTire: 'AB', // 设置轮胎周长
+    calibrateGyro: 'BE', // 陀螺仪校准
+    restart: '33', // 通过 FFE2 写单字节 33
   };
 
-  /** 命令字中文名（日志与调试页显示用） */
   const CMD_NAMES = {
-    [CMDS.restart]: '重启设备',
-    [CMDS.setWheel]: '设置轮径',
-    [CMDS.queryGyro]: '查询陀螺仪',
+    [CMDS.voltage]: '查询电压',
+    [CMDS.speed]: '查询速度',
+    [CMDS.temperature]: '查询温度',
+    [CMDS.trip]: '查询里程',
+    [CMDS.gyro]: '查询陀螺仪',
+    [CMDS.climb]: '查询爬坡',
+    [CMDS.setMode]: '设置模式',
+    [CMDS.setPower]: '设置功率',
+    [CMDS.setTire]: '设置轮胎',
     [CMDS.calibrateGyro]: '校准陀螺仪',
-    [CMDS.assistLevel]: '助力档位',
-    [CMDS.assistMode]: '助力模式',
-    [CMDS.assistStop]: '停止助力',
-    [CMDS.assistPercent]: '手动助力%',
-    [CMDS.speedLimit]: '限速',
-    [CMDS.headLamp]: '头灯',
+    [CMDS.restart]: '重启设备',
   };
 
-  /* ======================= 2. 上报字段表 ======================= */
-  // 字段来源：逆向文档 4.x 的功能项。偏移为占位，需实测校正。
-  // 在设置页可粘贴实验字段表 JSON 覆盖，无需改代码。
-  const REPORT_FIELDS = [
-    { key: 'speed', type: 'u16', offset: 0, scale: 0.1 }, // km/h ×10
-    { key: 'avgSpeed', type: 'u16', offset: 2, scale: 0.1 },
-    { key: 'maxSpeed', type: 'u16', offset: 4, scale: 0.1 },
-    { key: 'cadence', type: 'u8', offset: 6 },
-    { key: 'trip', type: 'u16', offset: 7, scale: 0.1 }, // km ×10
-    { key: 'odo', type: 'u32', offset: 9, scale: 0.001 }, // km，单位 m
-    { key: 'battery', type: 'u8', offset: 13, clamp: [0, 100] },
-    { key: 'voltage', type: 'u16', offset: 14, scale: 0.1 }, // V ×10
-    { key: 'assistLevel', type: 'u8', offset: 16 },
-    { key: 'assistPower', type: 'u16', offset: 17 }, // W
-    { key: 'motorPower', type: 'u16', offset: 19 }, // W
-    { key: 'gyro', type: 'i16', offset: 21, scale: 0.1 }, // °
-    { key: 'controllerTemp', type: 'i8', offset: 23 }, // °C
-    { key: 'motorTemp', type: 'i8', offset: 24 },
-  ];
+  /** 助力模式码（原厂 3.4.0 已确认） */
+  const MODE_CODES = { commute: 4, exercise: 3, climbing: 5, leisure: 2, manual: 1 };
+  const MODE_BY_CODE = Object.fromEntries(Object.entries(MODE_CODES).map(([k, v]) => [v, k]));
 
-  /* ======================= 3. 编码 ======================= */
+  /* ======================= 工具函数 ======================= */
+  function padHex(n, width) {
+    return n.toString(16).toUpperCase().padStart(width, '0');
+  }
 
-  /**
-   * @param command { kind:'wheel'|'mode'|'level'|'stop'|'gyro'|'calibrate'|'restart'|'status'|'raw', ... }
-   * @param prefs  LvBu prefs（含 protocol / commands 覆盖）
-   * @returns { frames: Uint8Array[], meta: object }
-   */
+  function hexStrToBytes(hexStr) {
+    const clean = hexStr.replace(/[^0-9A-Fa-f]/g, '');
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+    return bytes;
+  }
+
+  function bytesToHexStr(bytes) {
+    return Array.from(bytes, (b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+  }
+
+  function textToHex(text) {
+    return Array.from(new TextEncoder().encode(text), (b) => padHex(b, 2)).join(' ');
+  }
+
+  function hexToText(hexStr) {
+    // 去除空格，转 Uint8Array
+    const clean = hexStr.replace(/[^0-9A-Fa-f]/g, '');
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function getImei(prefs) {
+    return (prefs && prefs.imei) || DEFAULT_IMEI;
+  }
+
+  /* ======================= 编码 ======================= */
+  function buildCommand(cmd, imei, data) {
+    let frame = cmd + 'F' + imei;
+    if (data != null) frame += String(data);
+    return frame;
+  }
+
   function encode(command, prefs) {
-    // 允许调用方直接传 prefs.protocol / prefs 缺失
-    const prefsSafe = prefs || {};
-    const proto = Object.assign({}, prefsSafe.protocol);
-    // 兼容裸调用：把 prefs 的其它键传进来时避免 undefined
-    if (!Array.isArray(proto.header)) proto.header = [0xaa, 0x55];
-    if (!proto.lenMode) proto.lenMode = 'frame';
-    if (!proto.checksum) proto.checksum = 'crc16modbus';
-    if (!proto.cmdSize) proto.cmdSize = 1;
-    if (proto.lenFieldAdjust == null) proto.lenFieldAdjust = 0;
-    const cmdTable = Object.assign({}, CMDS, prefsSafe.commands || {});
+    const imei = getImei(prefs);
     const meta = { command: command.kind, cmd: null, name: '' };
 
-    const frameOf = (cmd, payload) => {
-      meta.cmd = cmd;
-      meta.name = CMD_NAMES[cmd] || '';
-      return { frames: [P.buildFrame(proto, { cmd, payload })], meta };
-    };
+    let cmd;
+    let data = null;
 
     switch (command.kind) {
-      case 'wheel': {
-        const inch = Number(command.inch || 0);
-        const dia = Number(command.diameterMm || Math.round(inch * 25.4));
-        return frameOf(cmdTable.setWheel, [inch & 0xff, (dia >> 8) & 0xff, dia & 0xff]);
-      }
+      case 'voltage':
+        cmd = CMDS.voltage;
+        break;
+      case 'speed':
+        cmd = CMDS.speed;
+        break;
+      case 'temperature':
+        cmd = CMDS.temperature;
+        break;
+      case 'trip':
+        cmd = CMDS.trip;
+        break;
       case 'gyro':
-        return frameOf(cmdTable.queryGyro, []);
+        cmd = CMDS.gyro;
+        break;
+      case 'climb':
+        cmd = CMDS.climb;
+        break;
+      case 'mode':
+        cmd = CMDS.setMode;
+        data = padHex(MODE_CODES[command.mode] || command.mode, 2);
+        break;
+      case 'percent':
+        // A5 手动功率百分比；原厂 100% 边界有疑，保留接口但默认不使用
+        cmd = CMDS.setPower;
+        data = padHex(command.percent, 2);
+        break;
+      case 'wheel':
+        cmd = CMDS.setTire;
+        // 周长 mm，4 位十进制
+        data = String(command.diameterMm).padStart(4, '0');
+        break;
       case 'calibrate':
-        return frameOf(cmdTable.calibrateGyro, []);
+        cmd = CMDS.calibrateGyro;
+        break;
       case 'restart':
-        return frameOf(cmdTable.restart, []);
-      case 'mode': {
-        const index = MODE_CODES[command.mode];
-        if (index == null) throw new Error('未知骑行模式: ' + command.mode);
-        return frameOf(cmdTable.assistMode, [index]);
-      }
-      case 'level': {
-        // 助力等级 0~5（0=关闭助力）
-        const level = U.clamp(Math.round(Number(command.level || 0)), 0, 5);
-        return frameOf(cmdTable.assistLevel, [level]);
-      }
-      case 'percent': {
-        // 手动模式下的助力百分比 0~100
-        const percent = U.clamp(Math.round(Number(command.percent || 0)), 0, 100);
-        return frameOf(cmdTable.assistPercent, [percent]);
-      }
-      case 'stop':
-        return frameOf(cmdTable.assistStop, [0x00]);
-      case 'raw': {
-        // 调试页直接发送；noChecksum 支持贴原始完整帧
-        return { frames: [U.toBytes(command.bytes)], meta: { command: 'raw', cmd: null, name: '原始帧' } };
-      }
+        // 通过 FFE2 写单字节 0x33
+        return { frames: [new Uint8Array([0x33])], meta: { command: 'restart', cmd: '33', name: CMD_NAMES.restart, ctrl: true } };
+      case 'raw':
+        return { frames: [new TextEncoder().encode(String(command.text))], meta: { command: 'raw', cmd: null, name: '原始帧' } };
       default:
         throw new Error('未知命令类型: ' + command.kind);
     }
+
+    const text = buildCommand(cmd, imei, data);
+    meta.cmd = cmd;
+    meta.name = CMD_NAMES[cmd] || cmd;
+    // 协议：hex 字符串经 string2Hex 转成原始字节写入（非 ASCII）
+    return { frames: [hexStrToBytes(text)], meta };
   }
 
-  const MODE_CODES = { commute: 1, exercise: 2, climbing: 3, leisure: 4, manual: 5 };
-  const MODE_BY_CODE = Object.fromEntries(Object.entries(MODE_CODES).map(([k, v]) => [v, k]));
+  /* ======================= 解码 ======================= */
+  function parseReply(hexReply, prefs) {
+    const imei = getImei(prefs);
+    // 回复以十六进制字符串形式呈现；数值部分按原厂「十进制数字」解析
+    const clean = hexReply.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+    const update = {};
+    const prefix = (cmd) => cmd + 'F' + imei;
 
-  /* ======================= 4. 解码 ======================= */
-
-  /**
-   * 解析一帧，返回归一化的数据补丁 { speed, battery, ... }
-   * @param frame { cmd, payload, raw }
-   * @param prefs
-   * @returns { update:object, kind:string }
-   */
-  function decode(frame, prefs) {
-    const cmdTable = Object.assign({}, CMDS, (prefs && prefs.commands) || {});
-    const littleEndian = !!(prefs && prefs.protocol && prefs.protocol.littleEndian);
-    const fields = (prefs && prefs.reportFields) || REPORT_FIELDS;
-
-    // 上报帧：按字段表解析（私有帧）
-    if (frame.cmd === cmdTable.report) {
-      const { values } = P.parseFields(frame.payload, fields, littleEndian);
-      return { update: sanitize(values), kind: 'report' };
+    // 通用读取：状态在 18-20 位，数值在 20-24 位
+    function readValue(cmd, scale) {
+      if (!clean.startsWith(prefix(cmd)) || clean.length < 24) return null;
+      const state = clean.substr(18, 2);
+      if (state !== '01') return null; // 状态非 01 视为失败
+      const raw = parseInt(clean.substr(20, 4), 10); // 十进制
+      return raw / scale;
     }
 
-    // 助力应答：回显档位/模式/百分比
-    if (frame.cmd === cmdTable.assistLevel && frame.payload.length >= 1) {
-      return { update: { assistLevel: frame.payload[0] }, kind: 'ack' };
-    }
-    if (frame.cmd === cmdTable.assistMode && frame.payload.length >= 1) {
-      const mode = MODE_BY_CODE[frame.payload[0]];
-      return { update: mode ? { mode } : {}, kind: 'ack' };
-    }
-    if (frame.cmd === cmdTable.assistPercent && frame.payload.length >= 1) {
-      return { update: { assistPercent: frame.payload[0] }, kind: 'ack' };
+    // 电压 C0
+    const voltage = readValue(CMDS.voltage, 10);
+    if (voltage != null) update.voltage = voltage;
+
+    // 速度 BF
+    const speed = readValue(CMDS.speed, 10);
+    if (speed != null) update.speed = speed;
+
+    // 温度 C1
+    const temperature = readValue(CMDS.temperature, 10);
+    if (temperature != null) update.controllerTemp = temperature;
+
+    // 陀螺仪 BD
+    const gyro = readValue(CMDS.gyro, 10);
+    if (gyro != null) update.gyro = gyro;
+
+    // 里程 B1：米转公里
+    const trip = readValue(CMDS.trip, 10);
+    if (trip != null) update.trip = trip / 100;
+
+    // 爬坡 C6（字段含义待确认，暂不解析）
+
+    // 设置模式 C4 回包
+    if (clean.startsWith(prefix(CMDS.setMode))) {
+      const state = clean.substr(18, 2);
+      if (state === '01') {
+        const modeCode = parseInt(clean.substr(20, 2), 16);
+        update.mode = MODE_BY_CODE[modeCode];
+      }
     }
 
-    // 其它帧：交给 UI 提示为“收到应答”
-    return { update: {}, kind: 'other' };
+    const isAck = clean.startsWith('C4') || clean.startsWith('A5') || clean.startsWith('AB') || clean.startsWith('BE');
+    return { update, kind: isAck ? 'ack' : 'report' };
   }
 
-  /** 过滤明显不合理的值，避免占位字段表把界面刷成乱码 */
-  const SANITY = {
-    speed: [0, 120],
-    avgSpeed: [0, 120],
-    maxSpeed: [0, 120],
-    cadence: [0, 250],
-    trip: [0, 1000],
-    odo: [0, 500000],
-    battery: [0, 100],
-    voltage: [0, 100],
-    assistLevel: [0, 100],
-    assistPower: [0, 2000],
-    motorPower: [0, 5000],
-    gyro: [-180, 180],
-    controllerTemp: [-40, 150],
-    motorTemp: [-40, 150],
-  };
-
-  function sanitize(values) {
-    const out = {};
-    for (const k of Object.keys(values)) {
-      const r = SANITY[k];
-      if (r && (values[k] < r[0] || values[k] > r[1])) continue;
-      out[k] = Math.round(values[k] * 100) / 100;
-    }
-    return out;
-  }
-
-  /* ======================= 5. 连接后初始化序列 ======================= */
-  // 每次连接成功后按顺序下发；失败不阻塞其它项。
+  /* ======================= 连接后初始化序列 ======================= */
   function initSequence(prefs) {
     return [
-      { delay: 300, command: { kind: 'gyro' } },
+      { delay: 200, command: { kind: 'voltage' } },
+      { delay: 200, command: { kind: 'speed' } },
+      { delay: 200, command: { kind: 'temperature' } },
+      { delay: 200, command: { kind: 'gyro' } },
     ];
   }
 
   return {
     CMDS,
     CMD_NAMES,
-    REPORT_FIELDS,
     MODE_CODES,
     MODE_BY_CODE,
-    SANITY,
+    DEFAULT_IMEI,
     encode,
-    decode,
+    parseReply,
     initSequence,
+    buildCommand,
+    getImei,
+    hexStrToBytes,
+    bytesToHexStr,
+    textToHex,
+    hexToText,
   };
 });

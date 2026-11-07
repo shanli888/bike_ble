@@ -8,7 +8,7 @@
  * ========================================================================= */
 (function (root) {
   'use strict';
-  const { app, util, icons, config, adapter, protocol, ble } = root.LVBU;
+  const { app, util, icons, config, adapter, ble } = root.LVBU;
   const $ = (sel, el) => (el || document).querySelector(sel);
   const $$ = (sel, el) => Array.from((el || document).querySelectorAll(sel));
 
@@ -29,7 +29,7 @@
 
     // 传输层：Web Bluetooth
     app.attachTransport(ble.createTransport(app.state.prefs));
-    if (!ble.createTransport.supported && !app.state.transport.supported()) {
+    if (!(ble.supported && ble.supported()) && !app.state.transport.supported()) {
       app._internal.log('warn', '当前浏览器不支持 Web Bluetooth。iOS 请使用 Bluefy 打开。');
     }
 
@@ -183,7 +183,6 @@
     });
     $('#btnSendRaw').addEventListener('click', onSendRaw);
     els.rawInput.addEventListener('input', renderRawPreview);
-    ['autoChecksum', 'includeLen'].forEach((id) => $('#' + id).addEventListener('change', renderRawPreview));
 
     // 设置页
     $('#setUnit').addEventListener('change', (e) => {
@@ -200,26 +199,7 @@
     $('#setGap').addEventListener('change', (e) => app.updatePrefs({ frameGapMs: Number(e.target.value) }));
     $('#setKeepScreen').addEventListener('change', (e) => app.updatePrefs({ keepScreenOn: e.target.checked }));
     $('#setDemo').addEventListener('change', (e) => app.updatePrefs({ simulateWhenDisconnected: e.target.checked }));
-
-    $('#setHeader').addEventListener('change', (e) => {
-      const bytes = util.hexToBytes(e.target.value);
-      if (!bytes || !bytes.length) {
-        toast('帧头格式无效', 'error');
-        e.target.value = util.bytesToHex(app.state.prefs.protocol.header);
-        return;
-      }
-      app.updatePrefs({ protocol: { header: Array.from(bytes) } });
-      e.target.value = util.bytesToHex(bytes);
-    });
-    $('#setLenMode').addEventListener('change', (e) => app.updatePrefs({ protocol: { lenMode: e.target.value } }));
-    $('#setChecksum').addEventListener('change', (e) => app.updatePrefs({ protocol: { checksum: e.target.value } }));
-    $('#setEndian').addEventListener('change', (e) =>
-      app.updatePrefs({ protocol: { littleEndian: e.target.value === 'le' } })
-    );
-    $('#setCmdSize').addEventListener('change', (e) => app.updatePrefs({ protocol: { cmdSize: Number(e.target.value) } }));
-    $('#setCsHeader').addEventListener('change', (e) =>
-      app.updatePrefs({ protocol: { checksumIncludesHeader: e.target.checked } })
-    );
+    $('#setImei').addEventListener('change', (e) => app.updatePrefs({ imei: e.target.value.trim() }));
 
     $('#setService').addEventListener('change', (e) =>
       app.updatePrefs({ connection: { serviceUuid: e.target.value.trim() } })
@@ -624,7 +604,7 @@
     const header = [
       '# LVBU BLE 日志',
       '# 设备: ' + (conn.device ? `${conn.device.name} (${conn.device.id})` : '未连接'),
-      '# 协议: ' + JSON.stringify(prefs.protocol),
+      '# IMEI: ' + (prefs.imei || ''),
       '# 时间: ' + new Date().toISOString(),
       '',
     ].join('\n');
@@ -642,32 +622,17 @@
     toast('日志已导出');
   }
 
-  /* ======================= 原始帧发送 ======================= */
+  /* ======================= 原始命令发送（文本协议） ======================= */
   function buildRawFrame() {
     const text = els.rawInput.value.trim();
-    const bytes = util.hexToBytes(text);
-    if (!bytes || !bytes.length) return { error: 'HEX 格式无效（示例：AA 55 04 02…）' };
-    const auto = $('#autoChecksum').checked;
-    const includeLen = $('#includeLen').checked;
-    if (!auto) return { frame: bytes, note: '原样发送' };
-
-    // 自动校验：把已输入的字节重新装配成完整帧。
-    // 用户输入约定为「命令字 + 载荷」（长度与校验由程序补齐）；
-    // 若粘贴的是完整帧（以当前帧头开头且长度吻合），则原样发送。
-    const proto = app.state.prefs.protocol;
-    const header = util.toBytes(proto.header);
-    const cmdSize = proto.cmdSize || 1;
-    const csLen = protocol.checksumSize(proto.checksum);
-    const isFullFrame =
-      bytes.length > header.length &&
-      header.every((b, i) => bytes[i] === b) &&
-      bytes.length >= header.length + (proto.lenMode !== 'none' ? 1 : 0) + cmdSize + csLen;
-    if (isFullFrame) return { frame: bytes, note: '识别为完整帧，原样发送' };
-
-    const cmd = bytes[0] || 0;
-    const payload = bytes.slice(cmdSize);
-    const frame = protocol.buildFrame(proto, { cmd, payload, includeLen, noChecksum: !auto });
-    return { frame, note: '已补全校验' };
+    if (!text) return { error: '请输入命令文本（示例：C0F866855030090179）' };
+    // 自动补 IMEI：如果用户只输入命令码如 C0，自动拼接 F + IMEI
+    let full = text;
+    if (/^[A-Fa-f0-9]{2}$/.test(text)) {
+      const imei = app.state.prefs.imei || '866855030090179';
+      full = text.toUpperCase() + 'F' + imei;
+    }
+    return { frame: new TextEncoder().encode(full), note: '文本协议，直接发送', text: full };
   }
 
   function renderRawPreview() {
@@ -676,15 +641,15 @@
     pendingPreviewFrame = r.frame || null;
     els.rawPreview.textContent = r.error
       ? `预览：${r.error}`
-      : `预览（${r.frame.length} 字节）：${util.bytesToHex(r.frame)}`;
+      : `将发送：${r.text || ''}`;
   }
 
   async function onSendRaw() {
     const r = buildRawFrame();
     if (r.error) return toast(r.error, 'error');
     try {
-      await app.sendRaw(r.frame);
-      toast('已发送 ' + util.bytesToHex(r.frame), 'success');
+      await app.sendRaw(r.text);
+      toast('已发送 ' + r.text, 'success');
     } catch (err) {
       toast('发送失败：' + (err.message || err), 'error');
     }
@@ -708,13 +673,7 @@
     set('setGap', String(p.frameGapMs));
     check('setKeepScreen', p.keepScreenOn);
     check('setDemo', p.simulateWhenDisconnected);
-
-    set('setHeader', util.bytesToHex(p.protocol.header));
-    set('setLenMode', p.protocol.lenMode);
-    set('setChecksum', p.protocol.checksum);
-    set('setEndian', p.protocol.littleEndian ? 'le' : 'be');
-    set('setCmdSize', String(p.protocol.cmdSize));
-    check('setCsHeader', p.protocol.checksumIncludesHeader);
+    set('setImei', p.imei);
 
     set('setService', p.connection.serviceUuid);
     set('setWriteUuid', p.connection.writeUuid);

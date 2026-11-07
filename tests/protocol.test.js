@@ -1,9 +1,9 @@
-/* 协议层单元测试：node lvbu-ble/tests/protocol.test.js */
+/* 协议层单元测试：node lvbu-ble/tests/protocol.test.js
+ * 覆盖 LVBU 3.4.0 文本协议（命令帧 / 回复解析） */
 'use strict';
 const assert = require('assert');
 const path = require('path');
 const util = require(path.join(__dirname, '../js/util.js'));
-const protocol = require(path.join(__dirname, '../js/protocol.js'));
 const config = require(path.join(__dirname, '../js/config.js'));
 const adapter = require(path.join(__dirname, '../js/adapter.js'));
 
@@ -17,199 +17,103 @@ function test(name, fn) {
     failures.push({ name, error: e });
   }
 }
-const hex = (b) => util.bytesToHex(b);
-const fromHex = (s) => util.hexToBytes(s);
 
-/* ---------------- util ---------------- */
-test('hexToBytes 解析空格/逗号/0x 前缀', () => {
-  assert.strictEqual(hex(util.hexToBytes('AA 55 04')), 'AA 55 04');
-  assert.strictEqual(hex(util.hexToBytes('0xAA,0x55')), 'AA 55');
-  assert.strictEqual(hex(util.hexToBytes('aa55')), 'AA 55');
-  assert.strictEqual(util.hexToBytes('AA 5'), null);
+/* ---------------- util 基础 ---------------- */
+test('hexToBytes / bytesToHex', () => {
+  assert.strictEqual(util.bytesToHex(new Uint8Array([0xaa, 0x55])), 'AA 55');
+  assert.deepStrictEqual(Array.from(util.hexToBytes('AA 55')), [0xaa, 0x55]);
 });
 
-test('uuid 展开与等价比较', () => {
-  assert.strictEqual(util.expandUuid('ffe1'), '0000ffe1-0000-1000-8000-00805f9b34fb');
-  assert.ok(util.uuidEq('0xFFE1', '0000FFE1-0000-1000-8000-00805F9B34FB'));
-  assert.strictEqual(util.shortUuid(config.UUID.chMain), 'ffe1');
-});
-
-test('deepMerge 不污染默认对象', () => {
-  const base = { a: 1, nested: { x: 1, y: 2 } };
-  const out = util.deepMerge(base, { nested: { y: 9 } });
-  assert.deepStrictEqual(out, { a: 1, nested: { x: 1, y: 9 } });
-  assert.strictEqual(base.nested.y, 2);
-});
-
-/* ---------------- CRC ---------------- */
-test('CRC16-Modbus 已知向量 "123456789" = 0x4B37', () => {
-  const bytes = new TextEncoder().encode('123456789');
-  assert.strictEqual(protocol.crc16Modbus(bytes), 0x4b37);
-});
-
-/* ---------------- 构建 / 解析 ---------------- */
-const cfg = util.deepMerge(config.PROTOCOL_DEFAULTS, {});
-
-test('buildFrame: 帧头/长度/命令/校验 结构正确（invsum）', () => {
-  const f = protocol.buildFrame(cfg, { cmd: 0x10, payload: [] });
-  // AA 55 | len=01 | cmd=10 | invsum(1B)
-  assert.strictEqual(f[0], 0xaa);
-  assert.strictEqual(f[1], 0x55);
-  assert.strictEqual(f[2], 1, 'len = 1(cmd) + 0(payload) = 1');
-  assert.strictEqual(f[3], 0x10);
-  assert.strictEqual(f.length, 5);
-  // invsum 覆盖整帧含帧头：0xFF - (AA+55+01+10) & 0xFF
-  let sum = 0;
-  for (let i = 0; i < 4; i++) sum += f[i];
-  const expected = (0xff - (sum & 0xff)) & 0xff;
-  assert.strictEqual(f[4], expected);
-});
-
-test('parse 往返：单帧', () => {
-  const f = protocol.buildFrame(cfg, { cmd: 0x40, payload: [1, 2, 3] });
-  let got = null;
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => (got = fr));
-  p.push(f);
-  assert.ok(got, '应解析出一帧');
-  assert.strictEqual(got.cmd, 0x40);
-  assert.deepStrictEqual(Array.from(got.payload), [1, 2, 3]);
-  assert.ok(got.validChecksum);
-});
-
-test('parse 粘包：两帧一次到达', () => {
-  const a = protocol.buildFrame(cfg, { cmd: 0x40, payload: [9] });
-  const b = protocol.buildFrame(cfg, { cmd: 0x01 });
-  const joined = new Uint8Array([...a, ...b]);
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => got.push(fr));
-  p.push(joined);
-  assert.strictEqual(got.length, 2);
-  assert.strictEqual(got[0].cmd, 0x40);
-  assert.strictEqual(got[1].cmd, 0x01);
-});
-
-test('parse 分包：逐字节到达仍能拼回', () => {
-  const f = protocol.buildFrame(cfg, { cmd: 0x40, payload: [4, 5, 6, 7, 8] });
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => got.push(fr));
-  for (const b of f) p.push([b]);
-  assert.strictEqual(got.length, 1);
-  assert.deepStrictEqual(Array.from(got[0].payload), [4, 5, 6, 7, 8]);
-});
-
-test('parse 前导噪声：能重新同步到帧头', () => {
-  const f = protocol.buildFrame(cfg, { cmd: 0x01 });
-  const noisy = new Uint8Array([0x00, 0xff, 0xaa, 0x00, ...f]);
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => got.push(fr));
-  p.push(noisy);
-  assert.strictEqual(got.length, 1);
-  assert.strictEqual(got[0].cmd, 0x01);
-});
-
-test('parse 校验失败：重新同步后只解析出真正有效的那一帧', () => {
-  const bad = new Uint8Array([0xaa, 0x55, 0x06, 0x10, 0x00, 0x00]);
-  const good = protocol.buildFrame(cfg, { cmd: 0x11 }); // AA 55 05 11 <crc> <crc>
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => got.push(fr));
-  p.push(new Uint8Array([...bad, ...good]));
-  // 坏帧被丢弃；紧随其后的好帧必须完整解析出来（不能因长度字段被噪声误导而吞掉）
-  assert.ok(got.some((fr) => fr.cmd === 0x11), '好帧 0x11 必须被解析');
-  assert.ok(got.every((fr) => fr.validChecksum), '回调的帧校验都必须有效');
-  assert.ok(p.stats.badChecksum >= 1);
-});
-
-test('parse 纯坏帧不产生回调', () => {
-  const bad = new Uint8Array([0xaa, 0x55, 0x03, 0x10, 0x00, 0x00]);
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => got.push(fr));
-  p.push(bad);
-  assert.strictEqual(got.length, 0);
-});
-
-test('parse 载荷中含帧头字节 AA 55 时不误切', () => {
-  const f = protocol.buildFrame(cfg, { cmd: 0x40, payload: [0xaa, 0x55, 0x01] });
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(cfg, {}), (fr) => got.push(fr));
-  p.push(f);
-  assert.strictEqual(got.length, 1);
-  assert.deepStrictEqual(Array.from(got[0].payload), [0xaa, 0x55, 0x01]);
-});
-
-/* ---------------- 其它协议参数 ---------------- */
-test('lenMode=payload + 累加和 + 1 字节帧头', () => {
-  const c = util.deepMerge(config.PROTOCOL_DEFAULTS, {
-    header: [0xbf],
-    lenMode: 'payload',
-    checksum: 'sum',
-    checksumIncludesHeader: false, // sum 不覆盖帧头
-    cmdSize: 1,
-    littleEndian: false,
-  });
-  const f = protocol.buildFrame(c, { cmd: 0x21, payload: [0x64] });
-  // BF | 01(载荷长度) | 21(cmd) | 64(data) | sum
-  assert.strictEqual(f.length, 5);
-  assert.strictEqual(f[1], 1, '载荷长度');
-  const sum = (f[1] + f[2] + f[3]) & 0xff;
-  assert.strictEqual(f[4], sum);
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(c, {}), (fr) => got.push(fr));
-  p.push(f);
-  assert.strictEqual(got.length, 1);
-  assert.strictEqual(got[0].cmd, 0x21);
-  assert.strictEqual(got[0].payload[0], 0x64);
-});
-
-test('无校验 + 无长度字段（定长命令）', () => {
-  const c = util.deepMerge(config.PROTOCOL_DEFAULTS, { lenMode: 'none', checksum: 'none' });
-  const f = protocol.buildFrame(c, { cmd: 0x30 });
-  assert.strictEqual(hex(f), 'AA 55 30');
-  const got = [];
-  const p = protocol.createParser(util.deepMerge(c, {}), (fr) => got.push(fr));
-  p.push(f);
-  assert.strictEqual(got.length, 1);
-});
-
-/* ---------------- adapter ---------------- */
-function prefsWith(patch) {
-  return util.deepMerge(JSON.parse(JSON.stringify(config.PREF_DEFAULTS)), patch || {});
+/* ---------------- adapter 编码 ---------------- */
+function prefs(over = {}) {
+  return Object.assign({}, config.PREF_DEFAULTS, over);
 }
-const dbg = adapter.encode({ kind: 'gyro' }, prefsWith({}));
 
-test('adapter: 轮径命令 载荷 = inch,dia_hi,dia_lo', () => {
-  const { frames, meta } = adapter.encode({ kind: 'wheel', inch: 27, diameterMm: 2110 }, prefsWith({}));
-  assert.strictEqual(frames.length, 1);
-  assert.strictEqual(meta.cmd, adapter.CMDS.setWheel);
-  // len=4 (inch + dia_hi + dia_lo)
-  assert.strictEqual(frames[0][2], 4, '长度字段应为 4');
-  const payload = frames[0].slice(4, frames[0].length - 1); // exclude checksum
-  assert.deepStrictEqual(Array.from(payload), [27, (2110 >> 8) & 0xff, 2110 & 0xff]);
+test('命令帧：命令码 + F + IMEI（hex 字符串转字节）', () => {
+  const { frames, meta } = adapter.encode({ kind: 'voltage' }, prefs());
+  assert.strictEqual(meta.cmd, 'C0');
+  // C0F866855030090179 → 字节 C0 F8 66 85 50 30 09 01 79
+  assert.deepStrictEqual(Array.from(frames[0]), [0xC0, 0xF8, 0x66, 0x85, 0x50, 0x30, 0x09, 0x01, 0x79]);
 });
 
-test('adapter: 模式/档位编码与命令字覆盖', () => {
-  const p = prefsWith({ commands: { assistMode: 0x55 } });
-  const { frames, meta } = adapter.encode({ kind: 'mode', mode: 'climbing' }, p);
-  assert.strictEqual(meta.cmd, 0x55);
-  assert.strictEqual(frames[0][3], 0x55);
-  const { frames: lv } = adapter.encode({ kind: 'level', level: 130 }, prefsWith({}));
-  assert.strictEqual(lv[0][4], 5, '档位应被钳制到 0~5');
-});
-
-test('adapter: 手动百分比命令', () => {
-  const { frames } = adapter.encode({ kind: 'percent', percent: 35 }, prefsWith({}));
-  assert.strictEqual(frames[0][3], adapter.CMDS.assistPercent);
-  assert.strictEqual(frames[0][4], 35);
-});
-
-test('adapter: 每条命令都能被同一解析器解回', () => {
-  for (const kind of ['gyro', 'calibrate', 'restart']) {
-    const { frames } = adapter.encode({ kind }, prefsWith({}));
-    const got = [];
-    const p = protocol.createParser(util.deepMerge(config.PROTOCOL_DEFAULTS, {}), (fr) => got.push(fr));
-    p.push(frames[0]);
-    assert.strictEqual(got.length, 1, kind + ' 应可解析');
-    assert.ok(got[0].validChecksum, kind + ' 校验应通过');
+test('命令帧：速度 BF / 温度 C1 / 陀螺仪 BD', () => {
+  const cases = {
+    speed: [0xBF, 0xF8, 0x66, 0x85, 0x50, 0x30, 0x09, 0x01, 0x79],
+    temperature: [0xC1, 0xF8, 0x66, 0x85, 0x50, 0x30, 0x09, 0x01, 0x79],
+    gyro: [0xBD, 0xF8, 0x66, 0x85, 0x50, 0x30, 0x09, 0x01, 0x79],
+  };
+  for (const [kind, expected] of Object.entries(cases)) {
+    const { frames } = adapter.encode({ kind }, prefs());
+    assert.deepStrictEqual(Array.from(frames[0]), expected, kind);
   }
+});
+
+test('设置模式：C4 + 模式码（手动=01 休闲=02 运动=03 通勤=04 爬坡=05）', () => {
+  const mapping = { manual: 0x01, leisure: 0x02, exercise: 0x03, commute: 0x04, climbing: 0x05 };
+  for (const [mode, code] of Object.entries(mapping)) {
+    const { frames } = adapter.encode({ kind: 'mode', mode }, prefs());
+    // C4F866855030090179<mode> → 最后字节是 mode 码
+    const arr = Array.from(frames[0]);
+    assert.strictEqual(arr[arr.length - 1], code, mode);
+    assert.strictEqual(arr[0], 0xC4, mode + ' 命令码');
+  }
+});
+
+test('设置轮胎：AB + 周长', () => {
+  const { frames } = adapter.encode({ kind: 'wheel', inch: 27.5, diameterMm: 2165 }, prefs());
+  const arr = Array.from(frames[0]);
+  assert.strictEqual(arr[0], 0xAB);
+});
+
+test('重启：单字节 0x33 走控制通道', () => {
+  const { frames, meta } = adapter.encode({ kind: 'restart' }, prefs());
+  assert.strictEqual(frames[0][0], 0x33);
+  assert.strictEqual(meta.ctrl, true);
+});
+
+test('自定义 IMEI 覆盖', () => {
+  const { frames } = adapter.encode({ kind: 'voltage' }, prefs({ imei: '123456789012345' }));
+  // C0F123456789012345 → C0 F1 23 45 67 89 01 23 45
+  assert.deepStrictEqual(Array.from(frames[0]), [0xC0, 0xF1, 0x23, 0x45, 0x67, 0x89, 0x01, 0x23, 0x45]);
+});
+
+/* ---------------- adapter 回复解析（十进制数值） ---------------- */
+test('C0 电压回复：状态 01，末四位十进制 /10', () => {
+  // 字节 C0 F8 ... 01 03 85 → hex 字符串 ...010385，0385 十进制=385 → 38.5V
+  const hex = 'C0F866855030090179010385';
+  const { update } = adapter.parseReply(hex, prefs());
+  assert.strictEqual(update.voltage, 38.5);
+});
+
+test('C0 电压回复：分隔符空格也能解析', () => {
+  const hex = 'C0 F8 66 85 50 30 09 01 79 01 03 85';
+  const { update } = adapter.parseReply(hex, prefs());
+  assert.strictEqual(update.voltage, 38.5);
+});
+
+test('BF 速度回复：状态 01 末四位十进制', () => {
+  const hex = 'BFF866855030090179010000';
+  const { update } = adapter.parseReply(hex, prefs());
+  assert.strictEqual(update.speed, 0); // 静止样本
+});
+
+test('C4 模式回复：状态 01 + 模式码（十六进制）', () => {
+  const hex = 'C4F8668550300901790103';
+  const { update, kind } = adapter.parseReply(hex, prefs());
+  assert.strictEqual(kind, 'ack');
+  assert.strictEqual(update.mode, 'exercise'); // 03 = 运动
+});
+
+test('状态非 01 不解析数值', () => {
+  const hex = 'C0F866855030090179000385';
+  const { update } = adapter.parseReply(hex, prefs());
+  assert.strictEqual(update.voltage, undefined);
+});
+
+test('不匹配的回复被忽略', () => {
+  const hex = 'C0F000000000000000010385';
+  const { update } = adapter.parseReply(hex, prefs());
+  assert.deepStrictEqual(update, {});
 });
 
 /* ---------------- 结果 ---------------- */

@@ -132,13 +132,13 @@
     t.on('drop', (d) => emit('drop', d));
     t.on('update', (u) => {
       applyBikeUpdate(u);
-      // 设备回读的档位视为“已确认”
-      if (u.assistLevel != null && !state.draft.dirty) {
-        state.confirmed.level = u.assistLevel;
-      }
+      // 设备回读的档位/模式视为“已确认”
       if (u.mode && !state.draft.dirty) {
         state.confirmed.mode = u.mode;
         state.mode = u.mode;
+      }
+      if (u.assistPercent != null && !state.draft.dirty) {
+        state.confirmed.value = u.assistPercent;
       }
       changed();
     });
@@ -218,10 +218,15 @@
     const { frames, meta } = adapter.encode(command, state.prefs);
     let ok = 0;
     for (const frame of frames) {
+      // frame is Uint8Array (text protocol ASCII bytes)
       const hex = util.bytesToHex(frame);
       log('tx', `${meta.name || command.kind}  ${hex}`, { cmd: meta.cmd, bytes: hex });
       try {
-        await state.transport.write(frame);
+        if (meta.ctrl && state.transport.writeCtrl) {
+          await state.transport.writeCtrl(frame);
+        } else {
+          await state.transport.write(frame);
+        }
         ok++;
       } catch (err) {
         if (!opts.silent) toast('发送失败：' + (err.message || err), 'error');
@@ -232,8 +237,8 @@
   }
 
   /** 原始帧发送（调试页用） */
-  async function sendRaw(bytes) {
-    return send({ kind: 'raw', bytes }, { silent: true });
+  async function sendRaw(text) {
+    return send({ kind: 'raw', text }, { silent: true });
   }
 
   /* ---------------- 助力控制（需停车确认） ---------------- */

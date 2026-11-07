@@ -182,13 +182,11 @@
 
       <div class="frameio">
         <div class="frameio__field">
-          <label for="rawInput">发送原始帧</label>
+          <label for="rawInput">发送原始命令</label>
           <input class="input mono" id="rawInput" type="text" spellcheck="false"
-                 placeholder="AA 55 01 10 EF   （自动补全校验）" autocomplete="off" />
+                 placeholder="C0F866855030090179 或输入 C0 自动补全" autocomplete="off" />
         </div>
         <div class="frameio__row">
-          <label class="switch"><input type="checkbox" id="autoChecksum" checked /><span>自动校验</span></label>
-          <label class="switch"><input type="checkbox" id="includeLen" checked /><span>含长度字节</span></label>
           <button class="btn btn--primary btn--sm" id="btnSendRaw" type="button">
             <span class="i" data-icon="send" data-size="14"></span><span>发送</span>
           </button>
@@ -237,50 +235,12 @@
     </div>
 
     <div class="section">
-      <h2 class="section__title">协议参数</h2>
-      <p class="hint">
-        这些参数会立即作用于帧编解码。拿到官方协议后在此对齐即可，无需改代码。
-      </p>
-      <div class="row">
-        <label class="row__label" for="setHeader">帧头</label>
-        <input class="input mono input--short" id="setHeader" type="text" spellcheck="false" placeholder="AA 55" />
+      <h2 class="section__title">设备参数</h2>
+      <div class="row row--stack">
+        <label class="row__label" for="setImei">电机 IMEI</label>
+        <input class="input mono" id="setImei" type="text" spellcheck="false" placeholder="866855030090179" />
       </div>
-      <div class="row">
-        <label class="row__label" for="setLenMode">长度字段</label>
-        <select class="select" id="setLenMode">
-          <option value="frame">整帧长度</option>
-          <option value="payload">载荷长度</option>
-          <option value="cmd_payload">命令+载荷长度</option>
-          <option value="none">无长度字段</option>
-        </select>
-      </div>
-      <div class="row">
-        <label class="row__label" for="setChecksum">校验</label>
-        <select class="select" id="setChecksum">
-          <option value="crc16modbus">CRC16-Modbus</option>
-          <option value="sum">累加和</option>
-          <option value="xor">异或</option>
-          <option value="none">无</option>
-        </select>
-      </div>
-      <div class="row">
-        <label class="row__label" for="setEndian">字节序</label>
-        <select class="select" id="setEndian">
-          <option value="be">大端 (BE)</option>
-          <option value="le">小端 (LE)</option>
-        </select>
-      </div>
-      <div class="row">
-        <label class="row__label" for="setCmdSize">命令字长度</label>
-        <select class="select" id="setCmdSize">
-          <option value="1">1 字节</option>
-          <option value="2">2 字节</option>
-        </select>
-      </div>
-      <div class="row">
-        <span class="row__label">校验包含帧头</span>
-        <label class="switch switch--right"><input type="checkbox" id="setCsHeader" /><span></span></label>
-      </div>
+      <p class="hint">电机 IMEI 用于构造命令帧，必须与控制器匹配。</p>
     </div>
 
     <div class="section">

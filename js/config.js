@@ -25,26 +25,13 @@
     chFwRev: '00002a28-0000-1000-8000-00805f9b34fb',
   };
 
-  /** 可在「设置 → 协议参数」里覆盖的连接目标 */
+  /** 连接目标（可在设置中覆盖） */
   const CONNECTION_DEFAULTS = {
     serviceUuid: UUID.svcMain,
     writeUuid: UUID.chMain,
     notifyUuid: UUID.chMain,
-    writeMode: 'auto', // auto | withResponse | withoutResponse
-    notifyMode: 'notify', // notify | indicate
-    useCtrlCharForMode: false, // 助力模式类命令是否改走 FFE2
-  };
-
-  /** 帧结构默认值（依据真实协议 README） */
-  const PROTOCOL_DEFAULTS = {
-    header: [0xaa, 0x55],
-    lenMode: 'cmd_payload', // len = 1(命令字) + 数据长度
-    lenFieldAdjust: 0,
-    cmdSize: 1,
-    checksum: 'invsum', // 累加和取反：0xFF - (sum & 0xFF)，覆盖整帧含帧头
-    checksumIncludesHeader: true, // invsum 恒覆盖帧头
-    littleEndian: false,
-    maxFrame: 512,
+    ctrlUuid: UUID.chCtrl,
+    writeMode: 'withoutResponse',
   };
 
   /** 显示/用车设置 */
@@ -55,9 +42,8 @@
     frameGapMs: 40,
     keepScreenOn: true,
     simulateWhenDisconnected: false,
-    protocol: util.deepMerge(PROTOCOL_DEFAULTS, {}),
+    imei: '866855030090179', // 电机 IMEI，必填
     connection: util.deepMerge(CONNECTION_DEFAULTS, {}),
-    commands: {}, // 用户覆盖的命令字
     autoConnect: { id: '', name: '' },
   };
 
@@ -126,9 +112,9 @@
     storageSet('prefs', JSON.stringify(prefs));
   }
 
-  /** 旧版本迁移入口（当前无破坏性变更） */
+  /** 旧版本迁移入口 */
   function migrate(prefs) {
-    if (!Array.isArray(prefs.protocol.header)) prefs.protocol.header = PROTOCOL_DEFAULTS.header.slice();
+    if (prefs.imei == null) prefs.imei = '866855030090179';
     return prefs;
   }
 
@@ -140,7 +126,6 @@
   return {
     UUID,
     CONNECTION_DEFAULTS,
-    PROTOCOL_DEFAULTS,
     PREF_DEFAULTS,
     RIDE_MODES,
     WHEEL_CIRCUMFERENCE,
