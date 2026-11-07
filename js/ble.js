@@ -90,12 +90,8 @@
         return state.device;
       }
       setStatus('requesting');
-      const filters = opts.allDevices
-        ? []
-        : [
-            ...SERVICE_NAME_PREFIXES.map((p) => ({ namePrefix: p })),
-            { services: [prefs.connection.serviceUuid || root.LVBU.config.UUID.svcMain] },
-          ];
+      // 默认显示所有蓝牙设备（不过滤）
+      const filters = opts.allDevices ? [] : [];
       let device;
       try {
         device = await root.navigator.bluetooth.requestDevice({
