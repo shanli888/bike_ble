@@ -168,9 +168,9 @@
 
     // 设备页
     $('#btnScan').addEventListener('click', async () => {
-      // 固定设备 ID，自动连接
+      // 打开系统设备选择器（Web Bluetooth 必须由用户手势触发）
       try {
-        await app.autoConnect('866855030090179');
+        await app.scan();
       } catch (err) {
         toast('连接失败：' + (err.message || err), 'error');
       }
