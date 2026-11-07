@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#131426" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="智能码表" />
+  <title>智能码表 · LVBU</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============ 顶部标题栏 ============ -->
+<header class="appbar">
+  <div class="appbar__side appbar__side--left">
+    <button class="appbar__brand" id="brandBtn" type="button" aria-label="正在使用的电机品牌">
+      <span class="i i--bluetooth" data-icon="bluetooth" data-size="15"></span>
+      <span>LvBu motor</span>
+    </button>
+  </div>
+  <h1 class="appbar__title" id="appTitle">智能码表</h1>
+  <div class="appbar__side appbar__side--right">
+    <button class="appbar__icon" id="btnPower" type="button" aria-label="连接 / 断开" title="连接 / 断开">
+      <span class="i" data-icon="plug" data-size="17"></span>
+    </button>
+  </div>
+</header>
+
+<main class="views" id="views">
+
+  <!-- ==================== 码表 ==================== -->
+  <section class="view" id="page-dash" data-page="dash" aria-labelledby="appTitle">
+
+    <div class="connbar">
+      <span class="connbar__left" id="connLeft">
+        <span class="dot" id="connDot"></span><span id="connText">未连接</span>
+      </span>
+      <span class="connbar__right" id="connRight">
+        <span class="bars" id="signalBars"><i></i><i></i><i></i><i></i></span>
+        <span class="connbar__dbm" id="rssiText">-- dBm</span>
+      </span>
+    </div>
+
+    <!-- 速度 -->
+    <div class="speed" id="speedBlock">
+      <span class="speed__value" id="speedValue">0.0</span>
+      <span class="speed__meta">
+        <span class="tag tag--gps" id="gpsTag">GPS</span>
+        <span class="speed__unit" id="speedUnit">km/h</span>
+      </span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="stat__label">AVG</span><span class="stat__value" id="statAvg">--</span></div>
+      <div class="stat"><span class="stat__label">MAX</span><span class="stat__value" id="statMax">--</span></div>
+      <div class="stat"><span class="stat__label">里程</span><span class="stat__value" id="statTrip">--</span></div>
+    </div>
+
+    <!-- 助力控制 -->
+    <section class="panel" id="assistPanel" aria-label="助力控制">
+      <div class="panel__head">
+        <span class="panel__title">
+          <span class="i i--orange" data-icon="assist" data-size="20"></span>
+          <b>助力控制</b>
+          <em id="assistHint">手动 0~100%</em>
+        </span>
+        <button class="chip chip--confirm" id="confirmChip" type="button">手动 · 已确认</button>
+      </div>
+
+      <p class="panel__note" id="assistNote">模式设置需停车确认；停止助力等控制仍停用</p>
+
+      <div class="modes" id="modeRow" role="group" aria-label="骑行模式"></div>
+
+      <!-- 档位选择（非手动模式） -->
+      <div class="levels" id="levelRow" style="display:none;" role="group" aria-label="助力档位">
+        <button class="level-btn" data-level="0" type="button" disabled>0</button>
+        <button class="level-btn" data-level="1" type="button">1</button>
+        <button class="level-btn" data-level="2" type="button">2</button>
+        <button class="level-btn" data-level="3" type="button">3</button>
+        <button class="level-btn" data-level="4" type="button">4</button>
+        <button class="level-btn" data-level="5" type="button">5</button>
+      </div>
+
+      <!-- 手动模式滑杆 -->
+      <div class="assist-ctl" id="manualSliderWrap">
+        <button class="btn-ctl" id="btnMinus" type="button" aria-label="减">
+          <span class="i" data-icon="minus" data-size="20"></span>
+        </button>
+        <div class="sliderwrap">
+          <input class="slider" id="assistSlider" type="range" min="0" max="100" step="5" value="30"
+                 aria-label="助力百分比" />
+        </div>
+        <button class="btn-ctl" id="btnPlus" type="button" aria-label="加">
+          <span class="i" data-icon="plus" data-size="20"></span>
+        </button>
+        <button class="btn-ctl btn-ctl--stop" id="btnStop" type="button" disabled>
+          <span>停止</span>
+        </button>
+      </div>
+      <div class="assist-ctl__value"><span id="assistValue">30</span>%</div>
+    </section>
+
+    <!-- 数据卡片 -->
+    <section class="cards" aria-label="实时数据">
+      <article class="card card--cyan" id="cardGyro">
+        <header><span class="i" data-icon="gyro" data-size="16"></span><span>陀螺仪</span></header>
+        <div class="card__value" data-field="gyro">--</div>
+        <div class="card__sub">&nbsp;</div>
+      </article>
+
+      <article class="card card--green" id="cardBattery">
+        <header><span class="i" data-icon="battery" data-size="16"></span><span>电量</span></header>
+        <div class="card__value" data-field="battery">--</div>
+        <div class="card__sub" data-field="batterySub">-- V · 估算</div>
+        <div class="card__bar"><i data-field="batteryBar" style="width:0%"></i></div>
+      </article>
+
+      <article class="card card--amber" id="cardTemp">
+        <header><span class="i" data-icon="temp" data-size="16"></span><span>温度</span></header>
+        <div class="card__value" data-field="temp">--</div>
+        <div class="card__sub">℃ · 控制器</div>
+      </article>
+
+      <article class="card card--yellow" id="cardAssistPower">
+        <header><span class="i" data-icon="bolt" data-size="16"></span><span>助力功率</span></header>
+        <div class="card__value card__value--sm" data-field="assistPower">--</div>
+        <div class="card__unit">W</div>
+      </article>
+
+      <article class="card card--violet" id="cardMotorPower">
+        <header><span class="i" data-icon="motorBolt" data-size="16"></span><span>电机功率</span></header>
+        <div class="card__value card__value--sm" data-field="motorPower">--</div>
+        <div class="card__unit">W</div>
+      </article>
+
+      <article class="card card--blue" id="cardOdo">
+        <header><span class="i" data-icon="odo" data-size="16"></span><span>总里程</span></header>
+        <div class="card__value card__value--xs" data-field="odo">--</div>
+        <div class="card__unit">km</div>
+      </article>
+    </section>
+
+    <div class="disclaimer">
+      当前协议字段为逆向占位，显示值需以抓包实测校正 · 详见「设备 → 调试」
+    </div>
+  </section>
+
+  <!-- ==================== 设备 ==================== -->
+  <section class="view" id="page-device" data-page="device" hidden>
+
+    <div class="section">
+      <h2 class="section__title">连接</h2>
+      <div class="devcard">
+        <div class="devcard__top">
+          <span class="devcard__name" id="devName">未连接</span>
+          <span class="pill" id="devStatus">未连接</span>
+        </div>
+        <dl class="kv">
+          <div><dt>设备 ID</dt><dd id="devId">--</dd></div>
+          <div><dt>信号</dt><dd id="devRssi">--</dd></div>
+          <div><dt>写入特征</dt><dd id="devWrite">--</dd></div>
+          <div><dt>通知特征</dt><dd id="devNotify">--</dd></div>
+        </dl>
+        <div class="devcard__actions">
+          <button class="btn btn--primary" id="btnScan" type="button">
+            <span class="i" data-icon="bluetooth" data-size="16"></span><span>选择设备</span>
+          </button>
+          <button class="btn" id="btnReconnect" type="button" disabled>
+            <span class="i" data-icon="refresh" data-size="16"></span><span>重连</span>
+          </button>
+          <button class="btn btn--danger" id="btnDisconnect" type="button" disabled>断开</button>
+        </div>
+        <p class="hint">
+          iOS 上 Web Bluetooth 只能在 <b>Bluefy</b> 中启用；每次切换设备需刷新页面（系统限制）。
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section__title">调试</h2>
+
+      <div class="debugbar">
+        <label class="switch">
+          <input type="checkbox" id="autoScroll" checked />
+          <span>自动滚动</span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="hexView" checked />
+          <span>HEX 视图</span>
+        </label>
+        <button class="btn btn--ghost btn--sm" id="btnClearLog" type="button">
+          <span class="i" data-icon="trash" data-size="14"></span><span>清空</span>
+        </button>
+      </div>
+
+      <div class="log" id="logView" role="log" aria-live="off"></div>
+
+      <div class="frameio">
+        <div class="frameio__field">
+          <label for="rawInput">发送原始帧</label>
+          <input class="input mono" id="rawInput" type="text" spellcheck="false"
+                 placeholder="AA 55 01 10 EF   （自动补全校验）" autocomplete="off" />
+        </div>
+        <div class="frameio__row">
+          <label class="switch"><input type="checkbox" id="autoChecksum" checked /><span>自动校验</span></label>
+          <label class="switch"><input type="checkbox" id="includeLen" checked /><span>含长度字节</span></label>
+          <button class="btn btn--primary btn--sm" id="btnSendRaw" type="button">
+            <span class="i" data-icon="send" data-size="14"></span><span>发送</span>
+          </button>
+        </div>
+        <p class="hint" id="rawPreview">预览：—</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 设置 ==================== -->
+  <section class="view" id="page-settings" data-page="settings" hidden>
+
+    <div class="section">
+      <h2 class="section__title">显示与骑行</h2>
+      <div class="row">
+        <label class="row__label" for="setUnit">速度单位</label>
+        <select class="select" id="setUnit">
+          <option value="kmh">km/h</option>
+          <option value="mph">mph</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="row__label" for="setWheel">轮径</label>
+        <select class="select" id="setWheel"></select>
+      </div>
+      <div class="row">
+        <label class="row__label" for="setStep">滑杆步进</label>
+        <select class="select" id="setStep">
+          <option value="1">1%</option>
+          <option value="5">5%</option>
+          <option value="10">10%</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="row__label" for="setGap">帧间隔</label>
+        <select class="select" id="setGap">
+          <option value="0">0 ms</option>
+          <option value="40">40 ms</option>
+          <option value="100">100 ms</option>
+        </select>
+      </div>
+      <div class="row">
+        <span class="row__label">保持屏幕常亮</span>
+        <label class="switch switch--right"><input type="checkbox" id="setKeepScreen" /><span></span></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section__title">协议参数</h2>
+      <p class="hint">
+        这些参数会立即作用于帧编解码。拿到官方协议后在此对齐即可，无需改代码。
+      </p>
+      <div class="row">
+        <label class="row__label" for="setHeader">帧头</label>
+        <input class="input mono input--short" id="setHeader" type="text" spellcheck="false" placeholder="AA 55" />
+      </div>
+      <div class="row">
+        <label class="row__label" for="setLenMode">长度字段</label>
+        <select class="select" id="setLenMode">
+          <option value="frame">整帧长度</option>
+          <option value="payload">载荷长度</option>
+          <option value="cmd_payload">命令+载荷长度</option>
+          <option value="none">无长度字段</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="row__label" for="setChecksum">校验</label>
+        <select class="select" id="setChecksum">
+          <option value="crc16modbus">CRC16-Modbus</option>
+          <option value="sum">累加和</option>
+          <option value="xor">异或</option>
+          <option value="none">无</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="row__label" for="setEndian">字节序</label>
+        <select class="select" id="setEndian">
+          <option value="be">大端 (BE)</option>
+          <option value="le">小端 (LE)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="row__label" for="setCmdSize">命令字长度</label>
+        <select class="select" id="setCmdSize">
+          <option value="1">1 字节</option>
+          <option value="2">2 字节</option>
+        </select>
+      </div>
+      <div class="row">
+        <span class="row__label">校验包含帧头</span>
+        <label class="switch switch--right"><input type="checkbox" id="setCsHeader" /><span></span></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section__title">GATT 目标</h2>
+      <div class="row row--stack">
+        <label class="row__label" for="setService">服务 UUID</label>
+        <input class="input mono" id="setService" type="text" spellcheck="false" />
+      </div>
+      <div class="row row--stack">
+        <label class="row__label" for="setWriteUuid">写特征 UUID</label>
+        <input class="input mono" id="setWriteUuid" type="text" spellcheck="false" />
+      </div>
+      <div class="row row--stack">
+        <label class="row__label" for="setNotifyUuid">通知特征 UUID</label>
+        <input class="input mono" id="setNotifyUuid" type="text" spellcheck="false" />
+      </div>
+      <div class="row">
+        <label class="row__label" for="setWriteMode">写入方式</label>
+        <select class="select" id="setWriteMode">
+          <option value="auto">自动</option>
+          <option value="withResponse">有应答</option>
+          <option value="withoutResponse">无应答</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section__title">高级</h2>
+      <div class="row">
+        <span class="row__label">断开时显示演示数据</span>
+        <label class="switch switch--right"><input type="checkbox" id="setDemo" /><span></span></label>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnReset" type="button">恢复默认设置</button>
+        <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
+      </div>
+      <p class="hint version" id="appVersion">v1.0.0 · 逆向协议占位</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ 底部导航 ============ -->
+<nav class="tabbar" role="tablist" aria-label="主导航">
+  <button class="tab is-active" data-tab="dash" type="button" role="tab" aria-selected="true">
+    <span class="tab__pill"><span class="i" data-icon="gauge" data-size="22"></span></span>
+    <span class="tab__label">码表</span>
+  </button>
+  <button class="tab" data-tab="device" type="button" role="tab" aria-selected="false">
+    <span class="tab__pill"><span class="i" data-icon="bluetooth" data-size="22"></span></span>
+    <span class="tab__label">设备</span>
+  </button>
+  <button class="tab" data-tab="settings" type="button" role="tab" aria-selected="false">
+    <span class="tab__pill"><span class="i" data-icon="gear" data-size="22"></span></span>
+    <span class="tab__label">设置</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/util.js"></script>
+<script src="js/protocol.js"></script>
+<script src="js/config.js"></script>
+<script src="js/adapter.js"></script>
+<script src="js/ble.js"></script>
+<script src="js/app.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
