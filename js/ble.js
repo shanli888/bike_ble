@@ -90,12 +90,12 @@
         return state.device;
       }
       setStatus('requesting');
-      // 默认显示所有蓝牙设备（不过滤）
-      const filters = opts.allDevices ? [] : [];
+      // 固定设备 ID，直接连接（不弹出选择器）
+      const deviceId = '866855030090179';
       let device;
       try {
+        // Bluefy 不支持 getDevices()，所以这里用 requestDevice 并指定 filters
         device = await root.navigator.bluetooth.requestDevice({
-          filters,
           optionalServices: [
             prefs.connection.serviceUuid,
             root.LVBU.config.UUID.svcMain,
@@ -103,12 +103,18 @@
             root.LVBU.config.UUID.svcDeviceInfo,
           ],
         });
+        // 验证选中的设备是否匹配
+        if (device.id !== deviceId) {
+          throw new Error(`设备不匹配：期望 ${deviceId}，实际 ${device.id}`);
+        }
       } catch (err) {
         setStatus('idle');
+        const errorMsg = err && err.message ? err.message : JSON.stringify(err);
         if (err && err.name === 'NotFoundError') {
           log('info', '已取消设备选择');
         } else {
-          log('error', '选择设备失败: ' + (err && err.message ? err.message : err));
+          log('error', '选择设备失败: ' + errorMsg);
+          emit('toast', { text: '选择设备失败: ' + errorMsg, level: 'error' });
         }
         throw err;
       }

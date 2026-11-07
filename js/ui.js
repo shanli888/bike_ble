@@ -167,7 +167,14 @@
     els.confirmChip.addEventListener('click', onConfirmChip);
 
     // 设备页
-    $('#btnScan').addEventListener('click', () => app.scan().catch(() => {}));
+    $('#btnScan').addEventListener('click', async () => {
+      // 固定设备 ID，自动连接
+      try {
+        await app.autoConnect('866855030090179');
+      } catch (err) {
+        toast('连接失败：' + (err.message || err), 'error');
+      }
+    });
     $('#btnReconnect').addEventListener('click', () => app.reconnect());
     $('#btnDisconnect').addEventListener('click', () => app.disconnect());
     $('#btnClearLog').addEventListener('click', () => {
@@ -526,9 +533,6 @@
     const bar = $('[data-field="batteryBar"]');
     bar.style.width = `${util.clamp(b.battery == null ? 0 : b.battery, 0, 100)}%`;
     setCard('cardTemp', b.controllerTemp, (v) => util.fixed(v, 1));
-    setCard('cardAssistPower', b.assistPower, (v) => String(Math.round(v)));
-    setCard('cardMotorPower', b.motorPower, (v) => String(Math.round(v)));
-    setCard('cardOdo', b.odo, (v) => util.fixed(v, 1));
   }
 
   function setCard(id, value, fmt) {
@@ -721,7 +725,9 @@
   /* ======================= Toast ======================= */
   function toast(text, level) {
     if (!els.toast) return;
-    els.toast.textContent = text;
+    // 确保 text 是字符串
+    const safeText = typeof text === 'string' ? text : JSON.stringify(text);
+    els.toast.textContent = safeText;
     els.toast.dataset.level = level || 'info';
     els.toast.classList.add('is-show');
     clearTimeout(toastTimer);

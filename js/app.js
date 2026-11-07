@@ -71,7 +71,9 @@
     emit('log', entry);
   }
   function toast(text, level) {
-    emit('toast', { text, level: level || 'info' });
+    // 确保 text 是字符串，避免 [object Object]
+    const safeText = typeof text === 'string' ? text : JSON.stringify(text);
+    emit('toast', { text: safeText, level: level || 'info' });
   }
 
   /* ---------------- 首选项 ---------------- */
@@ -181,6 +183,17 @@
     if (!state.transport) throw new Error('传输层未初始化');
     try {
       await state.transport.connect(opts || {});
+    } catch (err) {
+      if (err && err.name !== 'NotFoundError') toast('连接失败：' + (err.message || err), 'error');
+      throw err;
+    }
+  }
+
+  /** 自动连接固定设备（通过 device ID） */
+  async function autoConnect(deviceId) {
+    if (!state.transport) throw new Error('传输层未初始化');
+    try {
+      await state.transport.connect({ deviceId });
     } catch (err) {
       if (err && err.name !== 'NotFoundError') toast('连接失败：' + (err.message || err), 'error');
       throw err;
