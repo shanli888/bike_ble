@@ -73,7 +73,6 @@
     els.assistValue = $('#assistValue');
     els.btnMinus = $('#btnMinus');
     els.btnPlus = $('#btnPlus');
-    els.btnStop = $('#btnStop');
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
     els.devName = $('#devName');
@@ -153,16 +152,6 @@
 
     els.btnMinus.addEventListener('click', () => nudge(-1));
     els.btnPlus.addEventListener('click', () => nudge(+1));
-
-    els.btnStop.addEventListener('click', () => {
-      if (!requireParked('停止助力')) return;
-      if (app.state.conn.status === 'ready') {
-        app.stopAssist();
-      } else {
-        app.setDraft({ value: 0 });
-        simConfirm();
-      }
-    });
 
     els.confirmChip.addEventListener('click', onConfirmChip);
 
@@ -457,7 +446,6 @@
     els.slider.disabled = !ready || !parked;
     els.btnMinus.disabled = !ready || !parked || draft.value <= 0;
     els.btnPlus.disabled = !ready || !parked || draft.value >= 100;
-    els.btnStop.disabled = !ready || !parked;
 
     // 档位按钮状态
     $$('.level-btn', levelsWrap).forEach((btn) => {

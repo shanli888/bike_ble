@@ -311,7 +311,7 @@ button { cursor: pointer; border: 0; background: none; }
 
 .assist-ctl {
   display: grid;
-  grid-template-columns: 50px 1fr 50px 70px;
+  grid-template-columns: 50px 1fr 50px;
   align-items: center;
   gap: 12px;
   margin-top: 18px;
@@ -330,7 +330,6 @@ button { cursor: pointer; border: 0; background: none; }
 }
 .btn-ctl:active:not(:disabled) { transform: scale(0.96); background: rgba(255, 255, 255, 0.13); }
 .btn-ctl:disabled { opacity: 0.45; cursor: default; }
-.btn-ctl--stop { width: 100%; font-size: 16px; color: #e2e6ee; }
 
 .sliderwrap { display: flex; align-items: center; }
 .slider {
