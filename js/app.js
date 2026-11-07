@@ -377,6 +377,7 @@
     on,
     go,
     scan,
+    autoConnect,
     reconnect,
     disconnect,
     send,
