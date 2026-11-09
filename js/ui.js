@@ -476,17 +476,27 @@
     els.note.classList.toggle('is-warn', draft.dirty && !parked);
   }
 
+  /** 渲染 10 格进度条 */
+  function renderBars(field, ratio, level) {
+    const grid = $(`[data-field="${field}"]`);
+    if (!grid) return;
+    const cells = $$('i', grid);
+    const filled = ratio == null ? 0 : Math.min(10, Math.max(0, Math.floor(ratio * 10)));
+    cells.forEach((cell, i) => cell.classList.toggle('on', i < filled));
+    grid.dataset.level = level || 'high';
+  }
+
   function renderCards() {
     const b = app.state.bike;
 
-    // 坡度：陀螺仪角度 → 坡度百分比
+    // ===== 坡度 =====
     const slope = b.gyro != null ? Math.round(Math.tan((b.gyro * Math.PI) / 180) * 100) : null;
+    $('[data-field="slopeHl"]').textContent = slope == null ? '--%' : `${slope}%`;
     setCard('cardGyro', slope, (v) => `${v}%`);
+    // 坡度进度条：0~30% 映射到 10 格
+    renderBars('slopeGrid', slope == null ? null : util.clamp(slope / 30, 0, 1), 'high');
 
-    // 电量卡片布局：
-    //   第一行 header：电池图标 + 「电量：90%」
-    //   第二行：10 格进度条
-    //   第三行：电压（大字）
+    // ===== 电量 =====
     const voltEl = $('[data-field="voltage"]');
     const hasVolt = b.voltage != null && isFinite(b.voltage);
     voltEl.textContent = hasVolt ? `${util.fixed(b.voltage, 1)}V` : '--';
@@ -494,16 +504,14 @@
 
     const pct = b.battery != null && isFinite(b.battery) ? Math.round(b.battery) : null;
     $('[data-field="batterySub"]').textContent = pct == null ? '--%' : `${pct}%`;
+    renderBars('batteryGrid', pct == null ? null : pct / 100, pct == null ? 'low' : pct > 50 ? 'high' : pct > 20 ? 'mid' : 'low');
 
-    // 10 格电池：每格 10%，已满格数 = floor(percent/10)
-    const cells = $$('[data-field="batteryGrid"] i');
-    const filled = pct == null ? 0 : Math.min(10, Math.floor(pct / 10));
-    cells.forEach((cell, i) => cell.classList.toggle('on', i < filled));
-    const grid = $('[data-field="batteryGrid"]');
-    if (grid) grid.dataset.level = pct == null ? 'low' : pct > 50 ? 'high' : pct > 20 ? 'mid' : 'low';
-
-    // 温度
-    setCard('cardTemp', b.controllerTemp, (v) => util.fixed(v, 1));
+    // ===== 温度 =====
+    const temp = b.controllerTemp != null && isFinite(b.controllerTemp) ? b.controllerTemp : null;
+    $('[data-field="tempHl"]').textContent = temp == null ? '--℃' : `${util.fixed(temp, 1)}℃`;
+    setCard('cardTemp', temp, (v) => util.fixed(v, 1));
+    // 温度进度条：0~60℃ 映射到 10 格
+    renderBars('tempGrid', temp == null ? null : util.clamp(temp / 60, 0, 1), 'mid');
   }
 
   function setCard(id, value, fmt) {

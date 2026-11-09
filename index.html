@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=15" />
+  <link rel="stylesheet" href="css/style.css?v=16" />
 </head>
 <body>
 
@@ -100,8 +100,14 @@
     <!-- 数据卡片 -->
     <section class="cards" aria-label="实时数据">
       <article class="card card--cyan" id="cardGyro">
-        <header><span class="i" data-icon="gyro" data-size="16"></span><span>坡度</span></header>
-        <div class="card__value card__value--bottom" data-field="slope">--</div>
+        <header>
+          <span class="i" data-icon="gyro" data-size="16"></span>
+          <span>坡度 <b class="card__hl" data-field="slopeHl">--%</b></span>
+        </header>
+        <div class="barframe">
+          <div class="bgrid" data-field="slopeGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="card__value" data-field="slope">--</div>
       </article>
 
       <article class="card card--green" id="cardBattery">
@@ -116,7 +122,13 @@
       </article>
 
       <article class="card card--amber" id="cardTemp">
-        <header><span class="i" data-icon="temp" data-size="16"></span><span>温度：℃</span></header>
+        <header>
+          <span class="i" data-icon="temp" data-size="16"></span>
+          <span>温度 <b class="card__hl" data-field="tempHl">--℃</b></span>
+        </header>
+        <div class="barframe">
+          <div class="bgrid" data-field="tempGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
         <div class="card__value" data-field="temp">--</div>
       </article>
     </section>
@@ -271,7 +283,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v1.3.6 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v1.3.7 · LVBU 码表</p>
     </div>
   </section>
 
@@ -295,16 +307,16 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="buildinfo" id="buildInfo">v1.3.6 · 2026-11-09 10:50</div>
+<div class="buildinfo" id="buildInfo">v1.3.7 · 2026-11-09 11:00</div>
 
-<script src="js/util.js?v=15"></script>
-<script src="js/protocol.js?v=15"></script>
-<script src="js/config.js?v=15"></script>
-<script src="js/adapter.js?v=15"></script>
-<script src="js/ble.js?v=15"></script>
-<script src="js/app.js?v=15"></script>
-<script src="js/icons.js?v=15"></script>
-<script src="js/sim.js?v=15"></script>
-<script src="js/ui.js?v=15"></script>
+<script src="js/util.js?v=16"></script>
+<script src="js/protocol.js?v=16"></script>
+<script src="js/config.js?v=16"></script>
+<script src="js/adapter.js?v=16"></script>
+<script src="js/ble.js?v=16"></script>
+<script src="js/app.js?v=16"></script>
+<script src="js/icons.js?v=16"></script>
+<script src="js/sim.js?v=16"></script>
+<script src="js/ui.js?v=16"></script>
 </body>
 </html>
