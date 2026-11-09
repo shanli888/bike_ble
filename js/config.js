@@ -39,7 +39,7 @@
     sliderStep: 5,
     frameGapMs: 40,
     keepScreenOn: true,
-    simulateWhenDisconnected: false,
+    simulateWhenDisconnected: true, // 未连接时填充示例数据
     wheelInch: 26, // 固定 26 寸
     imei: '866855030090179', // 电机 IMEI，必填
     connection: util.deepMerge(CONNECTION_DEFAULTS, {}),

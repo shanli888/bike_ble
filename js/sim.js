@@ -45,7 +45,7 @@
 
     // 速度：围绕目标值做平滑逼近 + 小抖动
     const wobble = Math.sin(script.t * 0.7) * 0.4 + Math.sin(script.t * 2.3) * 0.15;
-    const target = s.confirmed.level > 0 ? 12 + s.confirmed.level * 0.12 : 0;
+    const target = (s.confirmed.value || 0) > 0 ? 12 + (s.confirmed.value || 0) * 0.12 : 0;
     const cur = b.speed || 0;
     const next = Math.max(0, cur + (target - cur) * Math.min(1, dt * 0.8) + wobble * dt * 1.5);
     app.markSpeedSample(Math.round(next * 10) / 10);
@@ -58,18 +58,18 @@
     const elapsed = Math.max(1, (Date.now() - s.rideStartAt) / 1000);
     b.avgSpeed = Math.round((b.trip / (elapsed / 3600)) * 10) / 10 || 0;
 
-    // 电量和温度缓慢下降/上升
+    // 电量缓慢下降，温度/坡度缓慢变化
     if (b.battery != null) b.battery = Math.max(0, Math.round((b.battery - next * dt * 0.02) * 10) / 10);
     if (script.t % 3 < dt) {
       b.controllerTemp = Math.round(rand(20, 26) * 10) / 10;
       b.motorTemp = b.controllerTemp + rand(1, 3);
-      b.gyro = Math.round(rand(0, 4) * 10) / 10;
+      b.gyro = Math.round(rand(2, 6) * 10) / 10; // 坡度角度 2~6°
       b.voltage = Math.round((37.6 + rand(-0.3, 0.3)) * 10) / 10;
     }
 
-    // 助力功率
-    if (s.confirmed.level > 0) {
-      const base = s.confirmed.level * 2.2;
+    // 助力功率（仅演示显示，不依赖字段）
+    if ((s.confirmed.value || 0) > 0) {
+      const base = (s.confirmed.value || 0) * 2.2;
       b.assistPower = Math.round(base + Math.sin(script.t * 1.7) * 6 + rand(-3, 3));
       b.motorPower = Math.round(b.assistPower * rand(1.6, 2.1));
     } else {
@@ -77,19 +77,29 @@
       b.motorPower = 0;
     }
 
-    b.cadence = s.confirmed.level > 0 ? Math.round(52 + Math.sin(script.t / 3) * 8) : 0;
+    b.cadence = (s.confirmed.value || 0) > 0 ? Math.round(52 + Math.sin(script.t / 3) * 8) : 0;
 
     app._internal.changed();
   }
 
-  /** 首次启动时铺一组接近截图的初始值 */
+  /** 首次启动时铺一组示例数据，便于预览界面效果 */
   function seed() {
     const b = app.state.bike;
-    if (b.battery != null && b.odo) return;
     Object.assign(b, {
-      speed: 2.6, avgSpeed: 13.2, maxSpeed: 21.5, trip: 0.2, odo: 1284.8,
-      battery: 65, voltage: 37.6, assistLevel: 30, assistPower: 440, motorPower: 630,
-      gyro: 0.9, cadence: 58, controllerTemp: 21.7, motorTemp: 24.1,
+      speed: 18.6,
+      avgSpeed: 15.2,
+      maxSpeed: 24.8,
+      trip: 3.4,
+      odo: 1284.8,
+      battery: 71,        // 电量百分比
+      voltage: 38.5,      // 电压
+      assistLevel: 30,
+      assistPower: 440,
+      motorPower: 630,
+      gyro: 5.2,          // 坡度角度（°），对应约 9% 坡度
+      cadence: 58,
+      controllerTemp: 25.4,
+      motorTemp: 28.1,
     });
   }
 
