@@ -644,6 +644,21 @@ button { cursor: pointer; border: 0; background: none; }
 .toast[data-level="error"] { border-color: rgba(242, 96, 106, 0.5); color: #ffd7da; }
 .toast[data-level="success"] { border-color: rgba(61, 220, 112, 0.5); color: #d9ffe6; }
 
+/* ============================ 构建信息 ============================ */
+.buildinfo {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 2px);
+  z-index: 35;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #3d4456;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ============================ 适配 ============================ */
 @media (min-width: 560px) {
   .view { max-width: 430px; margin: 0 auto; }
