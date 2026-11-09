@@ -483,7 +483,10 @@
     const slope = b.gyro != null ? Math.round(Math.tan((b.gyro * Math.PI) / 180) * 100) : null;
     setCard('cardGyro', slope, (v) => `${v}%`);
 
-    // 电量卡片：大字=电压，小字=电量百分比，底部=10 格电池
+    // 电量卡片布局：
+    //   第一行 header：电池图标 + 「电量：90%」
+    //   第二行：10 格进度条
+    //   第三行：电压（大字）
     const voltEl = $('[data-field="voltage"]');
     const hasVolt = b.voltage != null && isFinite(b.voltage);
     voltEl.textContent = hasVolt ? `${util.fixed(b.voltage, 1)}V` : '--';

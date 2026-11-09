@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=11" />
+  <link rel="stylesheet" href="css/style.css?v=12" />
 </head>
 <body>
 
@@ -106,16 +106,17 @@
       </article>
 
       <article class="card card--green" id="cardBattery">
-        <header><span class="i" data-icon="battery" data-size="16"></span><span>电量</span></header>
-        <div class="card__value card__value--volt" data-field="voltage">--V</div>
-        <div class="card__sub" data-field="batterySub">--%</div>
+        <header>
+          <span class="i" data-icon="battery" data-size="16"></span>
+          <span>电量：<b class="card__hl" data-field="batterySub">--%</b></span>
+        </header>
         <div class="bgrid" data-field="batteryGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="card__value card__value--volt" data-field="voltage">--V</div>
       </article>
 
       <article class="card card--amber" id="cardTemp">
-        <header><span class="i" data-icon="temp" data-size="16"></span><span>温度</span></header>
+        <header><span class="i" data-icon="temp" data-size="16"></span><span>温度：℃</span></header>
         <div class="card__value" data-field="temp">--</div>
-        <div class="card__sub">℃ · 控制器</div>
       </article>
     </section>
 
@@ -269,7 +270,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v1.3.2 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v1.3.3 · LVBU 码表</p>
     </div>
   </section>
 
@@ -293,16 +294,16 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="buildinfo" id="buildInfo">v1.3.2 · 2026-11-09 10:12</div>
+<div class="buildinfo" id="buildInfo">v1.3.3 · 2026-11-09 10:25</div>
 
-<script src="js/util.js?v=11"></script>
-<script src="js/protocol.js?v=11"></script>
-<script src="js/config.js?v=11"></script>
-<script src="js/adapter.js?v=11"></script>
-<script src="js/ble.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
-<script src="js/icons.js?v=11"></script>
-<script src="js/sim.js?v=11"></script>
-<script src="js/ui.js?v=11"></script>
+<script src="js/util.js?v=12"></script>
+<script src="js/protocol.js?v=12"></script>
+<script src="js/config.js?v=12"></script>
+<script src="js/adapter.js?v=12"></script>
+<script src="js/ble.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
+<script src="js/icons.js?v=12"></script>
+<script src="js/sim.js?v=12"></script>
+<script src="js/ui.js?v=12"></script>
 </body>
 </html>

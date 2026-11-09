@@ -365,6 +365,16 @@ button { cursor: pointer; border: 0; background: none; }
 .card header { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #c2c8d5; }
 .card header .i svg { width: 14px; height: 14px; }
 
+/* 第一行内的高亮数值（如「电量：90%」中的 90%） */
+.card__hl {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: -0.01em;
+}
+.card--amber .card__hl { color: var(--amber-hi); }
+.card--cyan .card__hl { color: var(--cyan); }
+
 .card__value {
   margin-top: auto;
   font-size: 44px;
@@ -386,7 +396,7 @@ button { cursor: pointer; border: 0; background: none; }
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   gap: 3px;
-  margin-top: 9px;
+  margin-top: 12px;
 }
 .bgrid i {
   display: block;
