@@ -36,12 +36,11 @@
 
   /** 显示/用车设置 */
   const PREF_DEFAULTS = {
-    unit: 'kmh', // kmh | mph
-    wheelInch: 27.5,
     sliderStep: 5,
     frameGapMs: 40,
     keepScreenOn: true,
     simulateWhenDisconnected: false,
+    wheelInch: 26, // 固定 26 寸
     imei: '866855030090179', // 电机 IMEI，必填
     connection: util.deepMerge(CONNECTION_DEFAULTS, {}),
     autoConnect: { id: '', name: '' },
@@ -115,6 +114,8 @@
   /** 旧版本迁移入口 */
   function migrate(prefs) {
     if (prefs.imei == null) prefs.imei = '866855030090179';
+    prefs.wheelInch = 26; // 固定 26 寸，覆盖旧值
+    delete prefs.unit; // 移除旧的速度单位选项
     return prefs;
   }
 

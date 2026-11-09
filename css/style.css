@@ -161,42 +161,29 @@ button { cursor: pointer; border: 0; background: none; }
 .speed {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: baseline;
   gap: 8px;
   padding: 22px 0 0;
-  margin-left: 22px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .speed__value {
-  font-size: 122px;
+  font-size: 108px;
   font-weight: 200;
-  line-height: 0.82;
-  letter-spacing: -0.035em;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
   color: #f5f7fb;
   font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
+  white-space: nowrap;
 }
 
-.speed__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 9px;
-  padding-bottom: 10px;
+.speed__unit {
+  font-size: 24px;
+  font-weight: 300;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
-
-.tag {
-  display: inline-block;
-  padding: 3px 7px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.tag--gps { background: var(--gps); color: #fff; }
-.tag--gps.is-off { background: rgba(255, 255, 255, 0.1); color: var(--text-faint); }
-.tag--sim { background: rgba(247, 178, 30, 0.18); color: var(--amber); }
-
-.speed__unit { font-size: 23px; font-weight: 300; color: var(--text-dim); }
 
 /* ============================ AVG / MAX / 里程 ============================ */
 .stats {

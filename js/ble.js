@@ -74,9 +74,14 @@
       setStatus('requesting');
 
       try {
-        // Bluefy：acceptAllDevices 通常可用
+        // 按名称前缀过滤（LvBu motor 相关设备），避免列表里全是无关设备
         device = await root.navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
+          filters: [
+            { namePrefix: 'LvBu' },
+            { namePrefix: 'LVBU' },
+            { namePrefix: 'lvbu' },
+            { services: [config.UUID.svcMain] },
+          ],
           optionalServices: [config.UUID.svcMain, config.UUID.svcBattery, config.UUID.svcDeviceInfo],
         });
       } catch (err) {

@@ -44,6 +44,8 @@
   const listeners = {};
   let saveTimer = null;
   let tickTimer = null;
+  let pollTimer = null;
+  let pollBusy = false;
 
   /* ---------------- 事件 ---------------- */
   function on(evt, fn) {
@@ -117,10 +119,12 @@
         state.conn.chars = s.chars;
         state.rideStartAt = Date.now();
         onConnected();
+        startPolling();
       }
       if (s.status === 'disconnected') {
         state.conn.chars = null;
         state.conn.rssi = null;
+        stopPolling();
       }
       changed();
     });
@@ -176,6 +180,41 @@
     }
     // 初始化“已确认状态”为本机当前值（协议未回读前）
     state.confirmed.value = state.draft.value = state.bike.assistLevel || 0;
+  }
+
+  /* ---------------- 定时轮询（电量/温度/速度/陀螺仪） ---------------- */
+  const POLL_INTERVAL = 3000; // 每 3 秒轮询一轮
+
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(runPoll, POLL_INTERVAL);
+    // 连接后立即先跑一轮（onConnected 已查过一次，这里作为后续持续刷新）
+    runPoll();
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  async function runPoll() {
+    if (pollBusy) return;
+    if (state.conn.status !== 'ready') return;
+    pollBusy = true;
+    try {
+      for (const cmd of adapter.pollSequence(state.prefs)) {
+        try {
+          await send(cmd, { silent: true });
+          await util.sleep(120); // 命令间留间隔，避免抢占
+        } catch (_) {
+          /* 单条失败继续下一条 */
+        }
+      }
+    } finally {
+      pollBusy = false;
+    }
   }
 
   /* ---------------- 连接操作 ---------------- */

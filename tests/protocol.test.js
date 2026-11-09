@@ -83,6 +83,8 @@ test('C0 电压回复：状态 01，末四位十进制 /10', () => {
   const hex = 'C0F866855030090179010385';
   const { update } = adapter.parseReply(hex, prefs());
   assert.strictEqual(update.voltage, 38.5);
+  // 电压附带估算电量百分比
+  assert.strictEqual(update.battery, 71);
 });
 
 test('C0 电压回复：分隔符空格也能解析', () => {
@@ -114,6 +116,15 @@ test('不匹配的回复被忽略', () => {
   const hex = 'C0F000000000000000010385';
   const { update } = adapter.parseReply(hex, prefs());
   assert.deepStrictEqual(update, {});
+});
+
+test('电压→电量百分比估算（10S 锂电 30~42V）', () => {
+  assert.strictEqual(adapter.voltageToPercent(42), 100);
+  assert.strictEqual(adapter.voltageToPercent(30), 0);
+  assert.strictEqual(adapter.voltageToPercent(36), 50);
+  assert.strictEqual(adapter.voltageToPercent(45), 100); // 超上限钳制
+  assert.strictEqual(adapter.voltageToPercent(20), 0); // 低于下限钳制
+  assert.strictEqual(adapter.voltageToPercent(null), null);
 });
 
 /* ---------------- 结果 ---------------- */

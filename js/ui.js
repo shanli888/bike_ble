@@ -22,7 +22,6 @@
     cacheEls();
     paintIcons();
     buildModeRow();
-    buildWheelOptions();
     bindEvents();
     bindAppEvents();
     syncSettingsInputs();
@@ -58,7 +57,6 @@
     els.connRight = $('#connRight');
     els.rssiText = $('#rssiText');
     els.signalBars = $('#signalBars');
-    els.gpsTag = $('#gpsTag');
     els.speedValue = $('#speedValue');
     els.speedUnit = $('#speedUnit');
     els.statAvg = $('#statAvg');
@@ -105,11 +103,7 @@
   }
 
   function buildWheelOptions() {
-    const sel = $('#setWheel');
-    const inches = Object.keys(config.WHEEL_CIRCUMFERENCE).map(Number).sort((a, b) => a - b);
-    sel.innerHTML = inches
-      .map((i) => `<option value="${i}">${i}" · ${config.WHEEL_CIRCUMFERENCE[i]} mm</option>`)
-      .join('');
+    // 已移除：轮径固定 26 寸，不再需要动态选项
   }
 
   /* ======================= 事件绑定 ======================= */
@@ -174,13 +168,6 @@
     els.rawInput.addEventListener('input', renderRawPreview);
 
     // 设置页
-    $('#setUnit').addEventListener('change', (e) => {
-      app.updatePrefs({ unit: e.target.value });
-      renderSpeed();
-    });
-    $('#setWheel').addEventListener('change', (e) => {
-      app.setWheel(Number(e.target.value)).catch(() => {});
-    });
     $('#setStep').addEventListener('change', (e) => {
       app.updatePrefs({ sliderStep: Number(e.target.value) });
       applySliderStep();
@@ -189,6 +176,10 @@
     $('#setKeepScreen').addEventListener('change', (e) => app.updatePrefs({ keepScreenOn: e.target.checked }));
     $('#setDemo').addEventListener('change', (e) => app.updatePrefs({ simulateWhenDisconnected: e.target.checked }));
     $('#setImei').addEventListener('change', (e) => app.updatePrefs({ imei: e.target.value.trim() }));
+    $('#btnCalibrate').addEventListener('click', () => {
+      if (!requireParked('陀螺仪校准')) return;
+      app.calibrateGyro();
+    });
 
     $('#setService').addEventListener('change', (e) =>
       app.updatePrefs({ connection: { serviceUuid: e.target.value.trim() } })
@@ -389,27 +380,16 @@
     $$('i', els.signalBars).forEach((bar, i) => bar.classList.toggle('on', i < level && ready));
     els.signalBars.dataset.level = String(level);
     els.rssiText.textContent = ready ? (rssi == null ? '-- dBm' : `${rssi} dBm`) : '-- dBm';
-
-    // GPS 标
-    const gpsOn = app.state.gpsFix === true;
-    els.gpsTag.classList.toggle('is-off', !gpsOn);
-    if (demo) {
-      els.gpsTag.textContent = 'DEMO';
-      els.gpsTag.className = 'tag tag--sim';
-    } else {
-      els.gpsTag.textContent = 'GPS';
-      els.gpsTag.className = 'tag tag--gps' + (gpsOn ? '' : ' is-off');
-      els.gpsTag.title = gpsOn ? '速度来源：GPS' : '速度来源：设备（当前无 GPS 数据）';
-    }
   }
 
   function renderSpeed() {
     const b = app.state.bike;
-    const sp = app.displaySpeed(b.speed);
+    // 直接显示设备返回速度（km/h），无单位换算
+    const sp = b.speed;
     els.speedValue.textContent = util.fixed(sp, 1);
-    els.speedUnit.textContent = app.speedLabel();
-    els.statAvg.textContent = `${util.fixed(app.displaySpeed(b.avgSpeed), 1)} ${app.speedLabel()}`;
-    els.statMax.textContent = `${util.fixed(app.displaySpeed(b.maxSpeed), 1)} ${app.speedLabel()}`;
+    els.speedUnit.textContent = 'km/h';
+    els.statAvg.textContent = `${util.fixed(b.avgSpeed, 1)} km/h`;
+    els.statMax.textContent = `${util.fixed(b.maxSpeed, 1)} km/h`;
     els.statTrip.textContent = `${util.fixed(b.trip, 1)} km`;
     // 数字宽度自适应，避免超长时溢出
     const len = els.speedValue.textContent.length;
@@ -494,10 +474,12 @@
 
   function renderCards() {
     const b = app.state.bike;
-    setCard('cardGyro', b.gyro, (v) => `${util.fixed(v, 1)}°`);
+    // 坡度：将陀螺仪角度近似为坡度百分比显示
+    const slope = b.gyro != null ? Math.round(Math.tan((b.gyro * Math.PI) / 180) * 100) : null;
+    setCard('cardGyro', slope, (v) => `${v}%`);
     setCard('cardBattery', b.battery, (v) => `${Math.round(v)}%`);
     const sub = $('[data-field="batterySub"]');
-    sub.textContent = b.voltage == null ? '-- V · 估算' : `${util.fixed(b.voltage, 1)} V · 估算`;
+    sub.textContent = b.voltage == null ? '-- V' : `${util.fixed(b.voltage, 1)} V`;
     const bar = $('[data-field="batteryBar"]');
     bar.style.width = `${util.clamp(b.battery == null ? 0 : b.battery, 0, 100)}%`;
     setCard('cardTemp', b.controllerTemp, (v) => util.fixed(v, 1));
@@ -654,9 +636,7 @@
       const el = document.getElementById(id);
       if (el) el.checked = !!v;
     };
-    if (!$('#setUnit')) return;
-    set('setUnit', p.unit);
-    set('setWheel', String(p.wheelInch));
+    if (!$('#setStep')) return;
     set('setStep', String(p.sliderStep));
     set('setGap', String(p.frameGapMs));
     check('setKeepScreen', p.keepScreenOn);

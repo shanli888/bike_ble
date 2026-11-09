@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=4" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
 </head>
 <body>
 
@@ -47,10 +47,7 @@
     <!-- 速度 -->
     <div class="speed" id="speedBlock">
       <span class="speed__value" id="speedValue">0.0</span>
-      <span class="speed__meta">
-        <span class="tag tag--gps" id="gpsTag">GPS</span>
-        <span class="speed__unit" id="speedUnit">km/h</span>
-      </span>
+      <span class="speed__unit" id="speedUnit">km/h</span>
     </div>
 
     <div class="stats">
@@ -103,8 +100,8 @@
     <!-- 数据卡片 -->
     <section class="cards" aria-label="实时数据">
       <article class="card card--cyan" id="cardGyro">
-        <header><span class="i" data-icon="gyro" data-size="16"></span><span>陀螺仪</span></header>
-        <div class="card__value" data-field="gyro">--</div>
+        <header><span class="i" data-icon="gyro" data-size="16"></span><span>坡度</span></header>
+        <div class="card__value" data-field="slope">--</div>
         <div class="card__sub">&nbsp;</div>
       </article>
 
@@ -199,17 +196,6 @@
     <div class="section">
       <h2 class="section__title">显示与骑行</h2>
       <div class="row">
-        <label class="row__label" for="setUnit">速度单位</label>
-        <select class="select" id="setUnit">
-          <option value="kmh">km/h</option>
-          <option value="mph">mph</option>
-        </select>
-      </div>
-      <div class="row">
-        <label class="row__label" for="setWheel">轮径</label>
-        <select class="select" id="setWheel"></select>
-      </div>
-      <div class="row">
         <label class="row__label" for="setStep">滑杆步进</label>
         <select class="select" id="setStep">
           <option value="1">1%</option>
@@ -232,12 +218,21 @@
     </div>
 
     <div class="section">
+      <h2 class="section__title">设备操作</h2>
+      <div class="row">
+        <span class="row__label">陀螺仪校准</span>
+        <button class="btn btn--primary btn--sm" id="btnCalibrate" type="button">校准</button>
+      </div>
+      <p class="hint">校准会改变电机标定，仅在停车时操作。</p>
+    </div>
+
+    <div class="section">
       <h2 class="section__title">设备参数</h2>
       <div class="row row--stack">
         <label class="row__label" for="setImei">电机 IMEI</label>
         <input class="input mono" id="setImei" type="text" spellcheck="false" placeholder="866855030090179" />
       </div>
-      <p class="hint">电机 IMEI 用于构造命令帧，必须与控制器匹配。</p>
+      <p class="hint">电机 IMEI 用于构造命令帧，必须与控制器匹配。轮径固定 26 寸。</p>
     </div>
 
     <div class="section">
@@ -298,13 +293,13 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=4"></script>
-<script src="js/protocol.js?v=4"></script>
-<script src="js/config.js?v=4"></script>
-<script src="js/adapter.js?v=4"></script>
-<script src="js/ble.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
-<script src="js/icons.js?v=4"></script>
-<script src="js/ui.js?v=4"></script>
+<script src="js/util.js?v=5"></script>
+<script src="js/protocol.js?v=5"></script>
+<script src="js/config.js?v=5"></script>
+<script src="js/adapter.js?v=5"></script>
+<script src="js/ble.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/icons.js?v=5"></script>
+<script src="js/ui.js?v=5"></script>
 </body>
 </html>

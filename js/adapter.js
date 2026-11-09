@@ -172,7 +172,11 @@
 
     // 电压 C0
     const voltage = readValue(CMDS.voltage, 10);
-    if (voltage != null) update.voltage = voltage;
+    if (voltage != null) {
+      update.voltage = voltage;
+      // 由电压估算电量百分比（10S 锂电：30V=0% ~ 42V=100%）
+      update.battery = voltageToPercent(voltage);
+    }
 
     // 速度 BF
     const speed = readValue(CMDS.speed, 10);
@@ -182,7 +186,7 @@
     const temperature = readValue(CMDS.temperature, 10);
     if (temperature != null) update.controllerTemp = temperature;
 
-    // 陀螺仪 BD
+    // 陀螺仪/坡度 BD
     const gyro = readValue(CMDS.gyro, 10);
     if (gyro != null) update.gyro = gyro;
 
@@ -215,6 +219,26 @@
     ];
   }
 
+  /** 定时轮询的命令序列（连接后周期性执行） */
+  function pollSequence(prefs) {
+    return [
+      { kind: 'voltage' },
+      { kind: 'temperature' },
+      { kind: 'speed' },
+      { kind: 'gyro' },
+    ];
+  }
+
+  /** 电压 → 电量百分比估算（10S 锂电典型曲线，30V~42V 线性） */
+  function voltageToPercent(voltage) {
+    if (voltage == null || !isFinite(voltage)) return null;
+    const V_MIN = 30.0;
+    const V_MAX = 42.0;
+    if (voltage >= V_MAX) return 100;
+    if (voltage <= V_MIN) return 0;
+    return Math.round(((voltage - V_MIN) / (V_MAX - V_MIN)) * 100);
+  }
+
   return {
     CMDS,
     CMD_NAMES,
@@ -224,6 +248,8 @@
     encode,
     parseReply,
     initSequence,
+    pollSequence,
+    voltageToPercent,
     buildCommand,
     getImei,
     hexStrToBytes,
