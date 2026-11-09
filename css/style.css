@@ -396,14 +396,14 @@ button { cursor: pointer; border: 0; background: none; }
 }
 .card__value--sm { font-size: 30px; }
 .card__value--xs { font-size: 24px; }
-/* 电压大字带单位（40.1V）：白色，略小以适配卡片宽度 */
+/* 电压大字带单位（40.1V）：白色，略小以适配卡片宽度
+   注意：用 #cardBattery 提高优先级，压过后面的 .card--green .card__value 绿色 */
 .card__value--volt {
   font-size: 34px;
   letter-spacing: -0.03em;
   white-space: nowrap;
-  color: #ffffff;
 }
-.card--green .card__value--volt { color: #ffffff; }
+#cardBattery .card__value--volt { color: #ffffff; }
 
 .card__sub { margin-top: 4px; font-size: 12px; color: var(--text-faint); min-height: 1em; }
 .card__unit { font-size: 14px; color: var(--text-faint); margin-top: 2px; }
