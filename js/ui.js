@@ -486,7 +486,7 @@
     // 电量卡片：大字=电压，小字=电量百分比，底部=10 格电池
     const voltEl = $('[data-field="voltage"]');
     const hasVolt = b.voltage != null && isFinite(b.voltage);
-    voltEl.textContent = hasVolt ? util.fixed(b.voltage, 1) : '--';
+    voltEl.textContent = hasVolt ? `${util.fixed(b.voltage, 1)}V` : '--';
     document.getElementById('cardBattery').classList.toggle('is-empty', !hasVolt);
 
     const pct = b.battery != null && isFinite(b.battery) ? Math.round(b.battery) : null;
