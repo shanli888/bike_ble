@@ -32,18 +32,21 @@
       app._internal.log('warn', '当前浏览器不支持 Web Bluetooth。iOS 请使用 Bluefy 打开。');
     }
 
-    // 演示数据：未连接时填充固定的示例数据（不动态改变）
+    // 演示数据：开关开启且未连接时，填充固定示例数据
     if (root.LVBU.sim) {
-      // 仅填充一次静态示例数据，不启动动态模拟循环
+      let demoSeeded = false;
       const applyDemo = () => {
         const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
-        if (on) {
-          root.LVBU.sim.seed(); // 每次重填固定示例值
-          if (root.LVBU.sim.running) root.LVBU.sim.stop();
+        if (on && !demoSeeded) {
+          root.LVBU.sim.seed(); // 填充固定示例值
+          demoSeeded = true;
+          app._internal.changed();
         }
+        if (!on) demoSeeded = false; // 连接或关闭开关后，允许下次重新填充
+        if (root.LVBU.sim.running) root.LVBU.sim.stop(); // 不跑动态模拟
       };
       applyDemo();
-      stickDemo = setInterval(applyDemo, 2000); // 兜底：切回断开状态时重新填充
+      stickDemo = setInterval(applyDemo, 1500);
     }
 
     wireSlider();
@@ -154,14 +157,17 @@
     els.confirmChip.addEventListener('click', onConfirmChip);
 
     // 设备页
-    $('#btnScan').addEventListener('click', async () => {
+    const doScan = async () => {
       // 打开系统设备选择器（Web Bluetooth 必须由用户手势触发）
       try {
         await app.scan();
       } catch (err) {
         toast('连接失败：' + (err.message || err), 'error');
       }
-    });
+    };
+    $('#btnScan').addEventListener('click', doScan);
+    // 首页未连接引导按钮：与「选择设备」功能一致
+    $('#btnGuideConnect').addEventListener('click', doScan);
     $('#btnReconnect').addEventListener('click', () => app.reconnect());
     $('#btnDisconnect').addEventListener('click', () => app.disconnect());
     $('#btnClearLog').addEventListener('click', () => {
@@ -315,6 +321,27 @@
     renderAssist();
     renderCards();
     renderDevice();
+    renderDashVisibility();
+  }
+
+  /** 首页可见性：已连接或开启演示数据时显示完整面板，否则显示连接引导 */
+  function renderDashVisibility() {
+    const { conn, prefs } = app.state;
+    const connected = conn.status === 'ready';
+    const demoOn = !!prefs.simulateWhenDisconnected;
+    const showFull = connected || demoOn;
+
+    const guide = $('#emptyGuide');
+    const speedBlock = $('#speedBlock');
+    const statsRow = $('#statsRow');
+    const panel = $('#assistPanel');
+    const cards = $('.cards');
+    const disclaimer = $('.disclaimer');
+
+    if (guide) guide.hidden = showFull;
+    [speedBlock, statsRow, panel, cards, disclaimer].forEach((el) => {
+      if (el) el.hidden = !showFull;
+    });
   }
 
   function renderAll() {
@@ -392,8 +419,8 @@
     const sp = b.speed;
     els.speedValue.textContent = util.fixed(sp, 1);
     els.speedUnit.textContent = 'km/h';
-    els.statAvg.textContent = `${util.fixed(b.avgSpeed, 1)} km/h`;
-    els.statMax.textContent = `${util.fixed(b.maxSpeed, 1)} km/h`;
+    els.statAvg.textContent = util.fixed(b.avgSpeed, 1);
+    els.statMax.textContent = util.fixed(b.maxSpeed, 1);
     els.statTrip.textContent = `${util.fixed(b.trip, 1)} km`;
     // 数字宽度自适应，避免超长时溢出
     const len = els.speedValue.textContent.length;
@@ -491,7 +518,6 @@
 
     // ===== 坡度 =====
     const slope = b.gyro != null ? Math.round(Math.tan((b.gyro * Math.PI) / 180) * 100) : null;
-    $('[data-field="slopeHl"]').textContent = slope == null ? '--%' : `${slope}%`;
     setCard('cardGyro', slope, (v) => `${v}%`);
     // 坡度进度条：0~30% 映射到 10 格
     renderBars('slopeGrid', slope == null ? null : util.clamp(slope / 30, 0, 1), 'high');
@@ -508,10 +534,9 @@
 
     // ===== 温度 =====
     const temp = b.controllerTemp != null && isFinite(b.controllerTemp) ? b.controllerTemp : null;
-    $('[data-field="tempHl"]').textContent = temp == null ? '--℃' : `${util.fixed(temp, 1)}℃`;
     setCard('cardTemp', temp, (v) => util.fixed(v, 1));
-    // 温度进度条：0~60℃ 映射到 10 格
-    renderBars('tempGrid', temp == null ? null : util.clamp(temp / 60, 0, 1), 'mid');
+    // 温度进度条：0~100℃ 映射到 10 格
+    renderBars('tempGrid', temp == null ? null : util.clamp(temp / 100, 0, 1), 'mid');
   }
 
   function setCard(id, value, fmt) {

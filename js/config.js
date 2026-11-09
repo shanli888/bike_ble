@@ -39,7 +39,7 @@
     sliderStep: 5,
     frameGapMs: 40,
     keepScreenOn: true,
-    simulateWhenDisconnected: true, // 未连接时填充示例数据
+    simulateWhenDisconnected: false, // 未连接时是否显示示例数据（默认关闭）
     wheelInch: 26, // 固定 26 寸
     imei: '866855030090179', // 电机 IMEI，必填
     connection: util.deepMerge(CONNECTION_DEFAULTS, {}),
@@ -116,8 +116,8 @@
     if (prefs.imei == null) prefs.imei = '866855030090179';
     prefs.wheelInch = 26; // 固定 26 寸，覆盖旧值
     delete prefs.unit; // 移除旧的速度单位选项
-    // 强制开启演示数据（用户请求：未连接时填充示例数据看效果）
-    if (prefs.simulateWhenDisconnected !== true) prefs.simulateWhenDisconnected = true;
+    // 演示数据由用户在设置页手动开关，不再强制开启
+    if (typeof prefs.simulateWhenDisconnected !== 'boolean') prefs.simulateWhenDisconnected = false;
     return prefs;
   }
 

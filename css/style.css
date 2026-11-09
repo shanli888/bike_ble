@@ -342,6 +342,26 @@ button { cursor: pointer; border: 0; background: none; }
 
 .assist-ctl__value { display: none; }
 
+/* hidden 属性兜底：防止 display:grid/flex 覆盖 */
+[hidden] { display: none !important; }
+
+/* ============================ 未连接引导 ============================ */
+.empty-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46vh;
+  padding: 24px 16px;
+  text-align: center;
+}
+.empty-guide__icon { color: #3d4560; margin-bottom: 6px; }
+.empty-guide__icon svg { width: 46px; height: 46px; }
+.empty-guide__title { margin: 0; font-size: 19px; font-weight: 600; color: #cfd5e2; }
+.empty-guide__sub { margin: 0 0 18px; font-size: 13px; color: var(--text-faint); }
+.empty-guide__btn { min-width: 190px; height: 46px; font-size: 16px; border-radius: 23px; }
+
 /* ============================ 数据卡片 ============================ */
 .cards {
   display: grid;

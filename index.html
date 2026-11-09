@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=16" />
+  <link rel="stylesheet" href="css/style.css?v=17" />
 </head>
 <body>
 
@@ -50,10 +50,20 @@
       <span class="speed__unit" id="speedUnit">km/h</span>
     </div>
 
-    <div class="stats">
+    <div class="stats" id="statsRow">
       <div class="stat"><span class="stat__label">AVG</span><span class="stat__value" id="statAvg">--</span></div>
       <div class="stat"><span class="stat__label">MAX</span><span class="stat__value" id="statMax">--</span></div>
       <div class="stat"><span class="stat__label">里程</span><span class="stat__value" id="statTrip">--</span></div>
+    </div>
+
+    <!-- 未连接引导（演示数据关闭且未连接时显示） -->
+    <div class="empty-guide" id="emptyGuide" hidden>
+      <span class="i empty-guide__icon" data-icon="bluetooth" data-size="46"></span>
+      <p class="empty-guide__title">未连接设备</p>
+      <p class="empty-guide__sub">连接后即可查看速度、电量、坡度与温度</p>
+      <button class="btn btn--primary empty-guide__btn" id="btnGuideConnect" type="button">
+        <span class="i" data-icon="plug" data-size="17"></span><span>连接设备</span>
+      </button>
     </div>
 
     <!-- 助力控制 -->
@@ -102,7 +112,7 @@
       <article class="card card--cyan" id="cardGyro">
         <header>
           <span class="i" data-icon="gyro" data-size="16"></span>
-          <span>坡度 <b class="card__hl" data-field="slopeHl">--%</b></span>
+          <span>坡度</span>
         </header>
         <div class="barframe">
           <div class="bgrid" data-field="slopeGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -124,7 +134,7 @@
       <article class="card card--amber" id="cardTemp">
         <header>
           <span class="i" data-icon="temp" data-size="16"></span>
-          <span>温度 <b class="card__hl" data-field="tempHl">--℃</b></span>
+          <span>温度</span>
         </header>
         <div class="barframe">
           <div class="bgrid" data-field="tempGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -283,7 +293,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v1.3.7 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v1.4.0 · LVBU 码表</p>
     </div>
   </section>
 
@@ -307,16 +317,16 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="buildinfo" id="buildInfo">v1.3.7 · 2026-11-09 11:00</div>
+<div class="buildinfo" id="buildInfo">v1.4.0 · 2026-11-09 11:15</div>
 
-<script src="js/util.js?v=16"></script>
-<script src="js/protocol.js?v=16"></script>
-<script src="js/config.js?v=16"></script>
-<script src="js/adapter.js?v=16"></script>
-<script src="js/ble.js?v=16"></script>
-<script src="js/app.js?v=16"></script>
-<script src="js/icons.js?v=16"></script>
-<script src="js/sim.js?v=16"></script>
-<script src="js/ui.js?v=16"></script>
+<script src="js/util.js?v=17"></script>
+<script src="js/protocol.js?v=17"></script>
+<script src="js/config.js?v=17"></script>
+<script src="js/adapter.js?v=17"></script>
+<script src="js/ble.js?v=17"></script>
+<script src="js/app.js?v=17"></script>
+<script src="js/icons.js?v=17"></script>
+<script src="js/sim.js?v=17"></script>
+<script src="js/ui.js?v=17"></script>
 </body>
 </html>
