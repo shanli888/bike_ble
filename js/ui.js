@@ -33,14 +33,16 @@
     }
 
     // 演示数据：未连接时填充示例数据（默认开启，便于预览界面）
-    root.LVBU.sim.seed();
-    const simulate = () => {
-      const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
-      if (on && !root.LVBU.sim.running) root.LVBU.sim.start();
-      if (!on && root.LVBU.sim.running) root.LVBU.sim.stop();
-    };
-    stickDemo = setInterval(simulate, 800);
-    simulate(); // 立即执行一次
+    if (root.LVBU.sim) {
+      root.LVBU.sim.seed();
+      const simulate = () => {
+        const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
+        if (on && !root.LVBU.sim.running) root.LVBU.sim.start();
+        if (!on && root.LVBU.sim.running) root.LVBU.sim.stop();
+      };
+      stickDemo = setInterval(simulate, 800);
+      simulate(); // 立即执行一次
+    }
 
     wireSlider();
     renderAll();
