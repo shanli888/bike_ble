@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=14" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
 </head>
 <body>
 
@@ -101,8 +101,7 @@
     <section class="cards" aria-label="实时数据">
       <article class="card card--cyan" id="cardGyro">
         <header><span class="i" data-icon="gyro" data-size="16"></span><span>坡度</span></header>
-        <div class="card__value" data-field="slope">--</div>
-        <div class="card__sub">&nbsp;</div>
+        <div class="card__value card__value--bottom" data-field="slope">--</div>
       </article>
 
       <article class="card card--green" id="cardBattery">
@@ -110,7 +109,9 @@
           <span class="i" data-icon="battery" data-size="16"></span>
           <span>电量 <b class="card__hl" data-field="batterySub">--%</b></span>
         </header>
-        <div class="bgrid" data-field="batteryGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="barframe">
+          <div class="bgrid" data-field="batteryGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
         <div class="card__value card__value--volt" data-field="voltage">--V</div>
       </article>
 
@@ -270,7 +271,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v1.3.5 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v1.3.6 · LVBU 码表</p>
     </div>
   </section>
 
@@ -294,16 +295,16 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="buildinfo" id="buildInfo">v1.3.5 · 2026-11-09 10:42</div>
+<div class="buildinfo" id="buildInfo">v1.3.6 · 2026-11-09 10:50</div>
 
-<script src="js/util.js?v=14"></script>
-<script src="js/protocol.js?v=14"></script>
-<script src="js/config.js?v=14"></script>
-<script src="js/adapter.js?v=14"></script>
-<script src="js/ble.js?v=14"></script>
-<script src="js/app.js?v=14"></script>
-<script src="js/icons.js?v=14"></script>
-<script src="js/sim.js?v=14"></script>
-<script src="js/ui.js?v=14"></script>
+<script src="js/util.js?v=15"></script>
+<script src="js/protocol.js?v=15"></script>
+<script src="js/config.js?v=15"></script>
+<script src="js/adapter.js?v=15"></script>
+<script src="js/ble.js?v=15"></script>
+<script src="js/app.js?v=15"></script>
+<script src="js/icons.js?v=15"></script>
+<script src="js/sim.js?v=15"></script>
+<script src="js/ui.js?v=15"></script>
 </body>
 </html>
