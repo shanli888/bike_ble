@@ -7,23 +7,23 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="智能码表" />
-  <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=7" />
+  <meta name="apple-mobile-web-app-title" content="鏅鸿兘鐮佽〃" />
+  <title>鏅鸿兘鐮佽〃 路 LVBU</title>
+  <link rel="stylesheet" href="css/style.css?v=9" />
 </head>
 <body>
 
-<!-- ============ 顶部标题栏 ============ -->
+<!-- ============ 椤堕儴鏍囬鏍?============ -->
 <header class="appbar">
   <div class="appbar__side appbar__side--left">
-    <button class="appbar__brand" id="brandBtn" type="button" aria-label="正在使用的电机品牌">
+    <button class="appbar__brand" id="brandBtn" type="button" aria-label="姝ｅ湪浣跨敤鐨勭數鏈哄搧鐗?>
       <span class="i i--bluetooth" data-icon="bluetooth" data-size="15"></span>
       <span>LvBu motor</span>
     </button>
   </div>
-  <h1 class="appbar__title" id="appTitle">智能码表</h1>
+  <h1 class="appbar__title" id="appTitle">鏅鸿兘鐮佽〃</h1>
   <div class="appbar__side appbar__side--right">
-    <button class="appbar__icon" id="btnPower" type="button" aria-label="连接 / 断开" title="连接 / 断开">
+    <button class="appbar__icon" id="btnPower" type="button" aria-label="杩炴帴 / 鏂紑" title="杩炴帴 / 鏂紑">
       <span class="i" data-icon="plug" data-size="17"></span>
     </button>
   </div>
@@ -31,12 +31,12 @@
 
 <main class="views" id="views">
 
-  <!-- ==================== 码表 ==================== -->
+  <!-- ==================== 鐮佽〃 ==================== -->
   <section class="view" id="page-dash" data-page="dash" aria-labelledby="appTitle">
 
     <div class="connbar">
       <span class="connbar__left" id="connLeft">
-        <span class="dot" id="connDot"></span><span id="connText">未连接</span>
+        <span class="dot" id="connDot"></span><span id="connText">鏈繛鎺?/span>
       </span>
       <span class="connbar__right" id="connRight">
         <span class="bars" id="signalBars"><i></i><i></i><i></i><i></i></span>
@@ -44,7 +44,7 @@
       </span>
     </div>
 
-    <!-- 速度 -->
+    <!-- 閫熷害 -->
     <div class="speed" id="speedBlock">
       <span class="speed__value" id="speedValue">0.0</span>
       <span class="speed__unit" id="speedUnit">km/h</span>
@@ -53,26 +53,26 @@
     <div class="stats">
       <div class="stat"><span class="stat__label">AVG</span><span class="stat__value" id="statAvg">--</span></div>
       <div class="stat"><span class="stat__label">MAX</span><span class="stat__value" id="statMax">--</span></div>
-      <div class="stat"><span class="stat__label">里程</span><span class="stat__value" id="statTrip">--</span></div>
+      <div class="stat"><span class="stat__label">閲岀▼</span><span class="stat__value" id="statTrip">--</span></div>
     </div>
 
-    <!-- 助力控制 -->
-    <section class="panel" id="assistPanel" aria-label="助力控制">
+    <!-- 鍔╁姏鎺у埗 -->
+    <section class="panel" id="assistPanel" aria-label="鍔╁姏鎺у埗">
       <div class="panel__head">
         <span class="panel__title">
           <span class="i i--orange" data-icon="assist" data-size="20"></span>
-          <b>助力控制</b>
-          <em id="assistHint">手动 0~100%</em>
+          <b>鍔╁姏鎺у埗</b>
+          <em id="assistHint">鎵嬪姩 0~100%</em>
         </span>
-        <button class="chip chip--confirm" id="confirmChip" type="button">手动 · 已确认</button>
+        <button class="chip chip--confirm" id="confirmChip" type="button">鎵嬪姩 路 宸茬‘璁?/button>
       </div>
 
-      <p class="panel__note" id="assistNote">模式设置需停车确认；停止助力等控制仍停用</p>
+      <p class="panel__note" id="assistNote">妯″紡璁剧疆闇€鍋滆溅纭锛涘仠姝㈠姪鍔涚瓑鎺у埗浠嶅仠鐢?/p>
 
-      <div class="modes" id="modeRow" role="group" aria-label="骑行模式"></div>
+      <div class="modes" id="modeRow" role="group" aria-label="楠戣妯″紡"></div>
 
-      <!-- 档位选择（非手动模式） -->
-      <div class="levels" id="levelRow" style="display:none;" role="group" aria-label="助力档位">
+      <!-- 妗ｄ綅閫夋嫨锛堥潪鎵嬪姩妯″紡锛?-->
+      <div class="levels" id="levelRow" style="display:none;" role="group" aria-label="鍔╁姏妗ｄ綅">
         <button class="level-btn" data-level="0" type="button" disabled>0</button>
         <button class="level-btn" data-level="1" type="button">1</button>
         <button class="level-btn" data-level="2" type="button">2</button>
@@ -81,94 +81,93 @@
         <button class="level-btn" data-level="5" type="button">5</button>
       </div>
 
-      <!-- 手动模式滑杆 -->
+      <!-- 鎵嬪姩妯″紡婊戞潌 -->
       <div class="assist-ctl" id="manualSliderWrap">
-        <button class="btn-ctl" id="btnMinus" type="button" aria-label="减">
+        <button class="btn-ctl" id="btnMinus" type="button" aria-label="鍑?>
           <span class="i" data-icon="minus" data-size="20"></span>
         </button>
         <div class="sliderwrap">
           <input class="slider" id="assistSlider" type="range" min="0" max="100" step="5" value="30"
-                 aria-label="助力百分比" />
+                 aria-label="鍔╁姏鐧惧垎姣? />
         </div>
-        <button class="btn-ctl" id="btnPlus" type="button" aria-label="加">
+        <button class="btn-ctl" id="btnPlus" type="button" aria-label="鍔?>
           <span class="i" data-icon="plus" data-size="20"></span>
         </button>
       </div>
       <div class="assist-ctl__value"><span id="assistValue">30</span>%</div>
     </section>
 
-    <!-- 数据卡片 -->
-    <section class="cards" aria-label="实时数据">
+    <!-- 鏁版嵁鍗＄墖 -->
+    <section class="cards" aria-label="瀹炴椂鏁版嵁">
       <article class="card card--cyan" id="cardGyro">
-        <header><span class="i" data-icon="gyro" data-size="16"></span><span>坡度</span></header>
+        <header><span class="i" data-icon="gyro" data-size="16"></span><span>鍧″害</span></header>
         <div class="card__value" data-field="slope">--</div>
         <div class="card__sub">&nbsp;</div>
       </article>
 
       <article class="card card--green" id="cardBattery">
-        <header><span class="i" data-icon="battery" data-size="16"></span><span>电量</span></header>
-        <div class="card__value" data-field="battery">--</div>
-        <div class="card__sub" data-field="batterySub">-- V · 估算</div>
-        <div class="card__bar"><i data-field="batteryBar" style="width:0%"></i></div>
+        <header><span class="i" data-icon="battery" data-size="16"></span><span>鐢甸噺</span></header>
+        <div class="card__value" data-field="voltage">--</div>
+        <div class="card__unit">V</div>
+        <div class="card__sub" data-field="batterySub">--%</div>
+        <div class="bgrid" data-field="batteryGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       </article>
 
       <article class="card card--amber" id="cardTemp">
-        <header><span class="i" data-icon="temp" data-size="16"></span><span>温度</span></header>
+        <header><span class="i" data-icon="temp" data-size="16"></span><span>娓╁害</span></header>
         <div class="card__value" data-field="temp">--</div>
-        <div class="card__sub">℃ · 控制器</div>
+        <div class="card__sub">鈩?路 鎺у埗鍣?/div>
       </article>
     </section>
 
     <div class="disclaimer">
-      当前协议字段为逆向占位，显示值需以抓包实测校正 · 详见「设备 → 调试」
-    </div>
+      褰撳墠鍗忚瀛楁涓洪€嗗悜鍗犱綅锛屾樉绀哄€奸渶浠ユ姄鍖呭疄娴嬫牎姝?路 璇﹁銆岃澶?鈫?璋冭瘯銆?    </div>
   </section>
 
-  <!-- ==================== 设备 ==================== -->
+  <!-- ==================== 璁惧 ==================== -->
   <section class="view" id="page-device" data-page="device" hidden>
 
     <div class="section">
-      <h2 class="section__title">连接</h2>
+      <h2 class="section__title">杩炴帴</h2>
       <div class="devcard">
         <div class="devcard__top">
-          <span class="devcard__name" id="devName">未连接</span>
-          <span class="pill" id="devStatus">未连接</span>
+          <span class="devcard__name" id="devName">鏈繛鎺?/span>
+          <span class="pill" id="devStatus">鏈繛鎺?/span>
         </div>
         <dl class="kv">
-          <div><dt>设备 ID</dt><dd id="devId">--</dd></div>
-          <div><dt>信号</dt><dd id="devRssi">--</dd></div>
-          <div><dt>写入特征</dt><dd id="devWrite">--</dd></div>
-          <div><dt>通知特征</dt><dd id="devNotify">--</dd></div>
+          <div><dt>璁惧 ID</dt><dd id="devId">--</dd></div>
+          <div><dt>淇″彿</dt><dd id="devRssi">--</dd></div>
+          <div><dt>鍐欏叆鐗瑰緛</dt><dd id="devWrite">--</dd></div>
+          <div><dt>閫氱煡鐗瑰緛</dt><dd id="devNotify">--</dd></div>
         </dl>
         <div class="devcard__actions">
           <button class="btn btn--primary" id="btnScan" type="button">
-            <span class="i" data-icon="bluetooth" data-size="16"></span><span>选择设备</span>
+            <span class="i" data-icon="bluetooth" data-size="16"></span><span>閫夋嫨璁惧</span>
           </button>
           <button class="btn" id="btnReconnect" type="button" disabled>
-            <span class="i" data-icon="refresh" data-size="16"></span><span>重连</span>
+            <span class="i" data-icon="refresh" data-size="16"></span><span>閲嶈繛</span>
           </button>
-          <button class="btn btn--danger" id="btnDisconnect" type="button" disabled>断开</button>
+          <button class="btn btn--danger" id="btnDisconnect" type="button" disabled>鏂紑</button>
         </div>
         <p class="hint">
-          iOS 上 Web Bluetooth 只能在 <b>Bluefy</b> 中启用；每次切换设备需刷新页面（系统限制）。
-        </p>
+          iOS 涓?Web Bluetooth 鍙兘鍦?<b>Bluefy</b> 涓惎鐢紱姣忔鍒囨崲璁惧闇€鍒锋柊椤甸潰锛堢郴缁熼檺鍒讹級銆?        </p>
       </div>
     </div>
 
     <div class="section">
-      <h2 class="section__title">调试</h2>
+      <h2 class="section__title">璋冭瘯</h2>
 
       <div class="debugbar">
         <label class="switch">
           <input type="checkbox" id="autoScroll" checked />
-          <span>自动滚动</span>
+          <span>鑷姩婊氬姩</span>
         </label>
         <label class="switch">
           <input type="checkbox" id="hexView" checked />
-          <span>HEX 视图</span>
+          <span>HEX 瑙嗗浘</span>
         </label>
         <button class="btn btn--ghost btn--sm" id="btnClearLog" type="button">
-          <span class="i" data-icon="trash" data-size="14"></span><span>清空</span>
+          <span class="i" data-icon="trash" data-size="14"></span><span>娓呯┖</span>
         </button>
       </div>
 
@@ -176,27 +175,27 @@
 
       <div class="frameio">
         <div class="frameio__field">
-          <label for="rawInput">发送原始命令</label>
+          <label for="rawInput">鍙戦€佸師濮嬪懡浠?/label>
           <input class="input mono" id="rawInput" type="text" spellcheck="false"
-                 placeholder="C0F866855030090179 或输入 C0 自动补全" autocomplete="off" />
+                 placeholder="C0F866855030090179 鎴栬緭鍏?C0 鑷姩琛ュ叏" autocomplete="off" />
         </div>
         <div class="frameio__row">
           <button class="btn btn--primary btn--sm" id="btnSendRaw" type="button">
-            <span class="i" data-icon="send" data-size="14"></span><span>发送</span>
+            <span class="i" data-icon="send" data-size="14"></span><span>鍙戦€?/span>
           </button>
         </div>
-        <p class="hint" id="rawPreview">预览：—</p>
+        <p class="hint" id="rawPreview">棰勮锛氣€?/p>
       </div>
     </div>
   </section>
 
-  <!-- ==================== 设置 ==================== -->
+  <!-- ==================== 璁剧疆 ==================== -->
   <section class="view" id="page-settings" data-page="settings" hidden>
 
     <div class="section">
-      <h2 class="section__title">显示与骑行</h2>
+      <h2 class="section__title">鏄剧ず涓庨獞琛?/h2>
       <div class="row">
-        <label class="row__label" for="setStep">滑杆步进</label>
+        <label class="row__label" for="setStep">婊戞潌姝ヨ繘</label>
         <select class="select" id="setStep">
           <option value="1">1%</option>
           <option value="5">5%</option>
@@ -204,7 +203,7 @@
         </select>
       </div>
       <div class="row">
-        <label class="row__label" for="setGap">帧间隔</label>
+        <label class="row__label" for="setGap">甯ч棿闅?/label>
         <select class="select" id="setGap">
           <option value="0">0 ms</option>
           <option value="40">40 ms</option>
@@ -212,97 +211,97 @@
         </select>
       </div>
       <div class="row">
-        <span class="row__label">保持屏幕常亮</span>
+        <span class="row__label">淇濇寔灞忓箷甯镐寒</span>
         <label class="switch switch--right"><input type="checkbox" id="setKeepScreen" /><span></span></label>
       </div>
     </div>
 
     <div class="section">
-      <h2 class="section__title">设备操作</h2>
+      <h2 class="section__title">璁惧鎿嶄綔</h2>
       <div class="row">
-        <span class="row__label">陀螺仪校准</span>
-        <button class="btn btn--primary btn--sm" id="btnCalibrate" type="button">校准</button>
+        <span class="row__label">闄€铻轰华鏍″噯</span>
+        <button class="btn btn--primary btn--sm" id="btnCalibrate" type="button">鏍″噯</button>
       </div>
-      <p class="hint">校准会改变电机标定，仅在停车时操作。</p>
+      <p class="hint">鏍″噯浼氭敼鍙樼數鏈烘爣瀹氾紝浠呭湪鍋滆溅鏃舵搷浣溿€?/p>
     </div>
 
     <div class="section">
-      <h2 class="section__title">设备参数</h2>
+      <h2 class="section__title">璁惧鍙傛暟</h2>
       <div class="row row--stack">
-        <label class="row__label" for="setImei">电机 IMEI</label>
+        <label class="row__label" for="setImei">鐢垫満 IMEI</label>
         <input class="input mono" id="setImei" type="text" spellcheck="false" placeholder="866855030090179" />
       </div>
-      <p class="hint">电机 IMEI 用于构造命令帧，必须与控制器匹配。轮径固定 26 寸。</p>
+      <p class="hint">鐢垫満 IMEI 鐢ㄤ簬鏋勯€犲懡浠ゅ抚锛屽繀椤讳笌鎺у埗鍣ㄥ尮閰嶃€傝疆寰勫浐瀹?26 瀵搞€?/p>
     </div>
 
     <div class="section">
-      <h2 class="section__title">GATT 目标</h2>
+      <h2 class="section__title">GATT 鐩爣</h2>
       <div class="row row--stack">
-        <label class="row__label" for="setService">服务 UUID</label>
+        <label class="row__label" for="setService">鏈嶅姟 UUID</label>
         <input class="input mono" id="setService" type="text" spellcheck="false" />
       </div>
       <div class="row row--stack">
-        <label class="row__label" for="setWriteUuid">写特征 UUID</label>
+        <label class="row__label" for="setWriteUuid">鍐欑壒寰?UUID</label>
         <input class="input mono" id="setWriteUuid" type="text" spellcheck="false" />
       </div>
       <div class="row row--stack">
-        <label class="row__label" for="setNotifyUuid">通知特征 UUID</label>
+        <label class="row__label" for="setNotifyUuid">閫氱煡鐗瑰緛 UUID</label>
         <input class="input mono" id="setNotifyUuid" type="text" spellcheck="false" />
       </div>
       <div class="row">
-        <label class="row__label" for="setWriteMode">写入方式</label>
+        <label class="row__label" for="setWriteMode">鍐欏叆鏂瑰紡</label>
         <select class="select" id="setWriteMode">
-          <option value="auto">自动</option>
-          <option value="withResponse">有应答</option>
-          <option value="withoutResponse">无应答</option>
+          <option value="auto">鑷姩</option>
+          <option value="withResponse">鏈夊簲绛?/option>
+          <option value="withoutResponse">鏃犲簲绛?/option>
         </select>
       </div>
     </div>
 
     <div class="section">
-      <h2 class="section__title">高级</h2>
+      <h2 class="section__title">楂樼骇</h2>
       <div class="row">
-        <span class="row__label">断开时显示演示数据</span>
+        <span class="row__label">鏂紑鏃舵樉绀烘紨绀烘暟鎹?/span>
         <label class="switch switch--right"><input type="checkbox" id="setDemo" /><span></span></label>
       </div>
       <div class="actions">
-        <button class="btn" id="btnReset" type="button">恢复默认设置</button>
-        <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
+        <button class="btn" id="btnReset" type="button">鎭㈠榛樿璁剧疆</button>
+        <button class="btn btn--ghost" id="btnExportLogs" type="button">瀵煎嚭鏃ュ織</button>
       </div>
-      <p class="hint version" id="appVersion">v1.0.0 · 逆向协议占位</p>
+      <p class="hint version" id="appVersion">v1.3.0 · LVBU 码表</p>
     </div>
   </section>
 
 </main>
 
-<!-- ============ 底部导航 ============ -->
-<nav class="tabbar" role="tablist" aria-label="主导航">
+<!-- ============ 搴曢儴瀵艰埅 ============ -->
+<nav class="tabbar" role="tablist" aria-label="涓诲鑸?>
   <button class="tab is-active" data-tab="dash" type="button" role="tab" aria-selected="true">
     <span class="tab__pill"><span class="i" data-icon="gauge" data-size="22"></span></span>
-    <span class="tab__label">码表</span>
+    <span class="tab__label">鐮佽〃</span>
   </button>
   <button class="tab" data-tab="device" type="button" role="tab" aria-selected="false">
     <span class="tab__pill"><span class="i" data-icon="bluetooth" data-size="22"></span></span>
-    <span class="tab__label">设备</span>
+    <span class="tab__label">璁惧</span>
   </button>
   <button class="tab" data-tab="settings" type="button" role="tab" aria-selected="false">
     <span class="tab__pill"><span class="i" data-icon="gear" data-size="22"></span></span>
-    <span class="tab__label">设置</span>
+    <span class="tab__label">璁剧疆</span>
   </button>
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="buildinfo" id="buildInfo">v1.2.0 · 2026-11-09 09:32</div>
+<div class="buildinfo" id="buildInfo">v1.3.0 · 2026-11-09 09:45</div>
 
-<script src="js/util.js?v=7"></script>
-<script src="js/protocol.js?v=7"></script>
-<script src="js/config.js?v=7"></script>
-<script src="js/adapter.js?v=7"></script>
-<script src="js/ble.js?v=7"></script>
-<script src="js/app.js?v=7"></script>
-<script src="js/icons.js?v=7"></script>
-<script src="js/sim.js?v=7"></script>
-<script src="js/ui.js?v=7"></script>
+<script src="js/util.js?v=9"></script>
+<script src="js/protocol.js?v=9"></script>
+<script src="js/config.js?v=9"></script>
+<script src="js/adapter.js?v=9"></script>
+<script src="js/ble.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
+<script src="js/icons.js?v=9"></script>
+<script src="js/sim.js?v=9"></script>
+<script src="js/ui.js?v=9"></script>
 </body>
 </html>

@@ -32,16 +32,18 @@
       app._internal.log('warn', '当前浏览器不支持 Web Bluetooth。iOS 请使用 Bluefy 打开。');
     }
 
-    // 演示数据：未连接时填充示例数据（默认开启，便于预览界面）
+    // 演示数据：未连接时填充固定的示例数据（不动态改变）
     if (root.LVBU.sim) {
-      root.LVBU.sim.seed();
-      const simulate = () => {
+      // 仅填充一次静态示例数据，不启动动态模拟循环
+      const applyDemo = () => {
         const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
-        if (on && !root.LVBU.sim.running) root.LVBU.sim.start();
-        if (!on && root.LVBU.sim.running) root.LVBU.sim.stop();
+        if (on) {
+          root.LVBU.sim.seed(); // 每次重填固定示例值
+          if (root.LVBU.sim.running) root.LVBU.sim.stop();
+        }
       };
-      stickDemo = setInterval(simulate, 800);
-      simulate(); // 立即执行一次
+      applyDemo();
+      stickDemo = setInterval(applyDemo, 2000); // 兜底：切回断开状态时重新填充
     }
 
     wireSlider();
@@ -476,14 +478,28 @@
 
   function renderCards() {
     const b = app.state.bike;
-    // 坡度：将陀螺仪角度近似为坡度百分比显示
+
+    // 坡度：陀螺仪角度 → 坡度百分比
     const slope = b.gyro != null ? Math.round(Math.tan((b.gyro * Math.PI) / 180) * 100) : null;
     setCard('cardGyro', slope, (v) => `${v}%`);
-    setCard('cardBattery', b.battery, (v) => `${Math.round(v)}%`);
-    const sub = $('[data-field="batterySub"]');
-    sub.textContent = b.voltage == null ? '-- V' : `${util.fixed(b.voltage, 1)} V`;
-    const bar = $('[data-field="batteryBar"]');
-    bar.style.width = `${util.clamp(b.battery == null ? 0 : b.battery, 0, 100)}%`;
+
+    // 电量卡片：大字=电压，小字=电量百分比，底部=10 格电池
+    const voltEl = $('[data-field="voltage"]');
+    const hasVolt = b.voltage != null && isFinite(b.voltage);
+    voltEl.textContent = hasVolt ? util.fixed(b.voltage, 1) : '--';
+    document.getElementById('cardBattery').classList.toggle('is-empty', !hasVolt);
+
+    const pct = b.battery != null && isFinite(b.battery) ? Math.round(b.battery) : null;
+    $('[data-field="batterySub"]').textContent = pct == null ? '--%' : `${pct}%`;
+
+    // 10 格电池：每格 10%，已满格数 = floor(percent/10)
+    const cells = $$('[data-field="batteryGrid"] i');
+    const filled = pct == null ? 0 : Math.min(10, Math.floor(pct / 10));
+    cells.forEach((cell, i) => cell.classList.toggle('on', i < filled));
+    const grid = $('[data-field="batteryGrid"]');
+    if (grid) grid.dataset.level = pct == null ? 'low' : pct > 50 ? 'high' : pct > 20 ? 'mid' : 'low';
+
+    // 温度
     setCard('cardTemp', b.controllerTemp, (v) => util.fixed(v, 1));
   }
 
