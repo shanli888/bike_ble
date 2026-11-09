@@ -229,14 +229,30 @@
     ];
   }
 
-  /** 电压 → 电量百分比估算（10S 锂电典型曲线，30V~42V 线性） */
+  /** 电压 → 电量百分比估算（36V 标称锂电池，10 串，满电 42V）
+   *  采用分段线性拟合锂电放电曲线：
+   *    42.0V = 100%  40.1V = 90%  36.0V = 45%  30.0V = 0%
+   */
   function voltageToPercent(voltage) {
     if (voltage == null || !isFinite(voltage)) return null;
-    const V_MIN = 30.0;
-    const V_MAX = 42.0;
-    if (voltage >= V_MAX) return 100;
-    if (voltage <= V_MIN) return 0;
-    return Math.round(((voltage - V_MIN) / (V_MAX - V_MIN)) * 100);
+    // 分段端点：[电压, 百分比]
+    const CURVE = [
+      [42.0, 100],
+      [40.1, 90],
+      [36.0, 45],
+      [30.0, 0],
+    ];
+    if (voltage >= CURVE[0][0]) return 100;
+    if (voltage <= CURVE[CURVE.length - 1][0]) return 0;
+    for (let i = 0; i < CURVE.length - 1; i++) {
+      const [v1, p1] = CURVE[i];
+      const [v2, p2] = CURVE[i + 1];
+      if (voltage <= v1 && voltage >= v2) {
+        const ratio = (voltage - v2) / (v1 - v2);
+        return Math.round(p2 + ratio * (p1 - p2));
+      }
+    }
+    return 0;
   }
 
   return {

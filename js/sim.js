@@ -91,15 +91,15 @@
       maxSpeed: 24.8,
       trip: 3.4,
       odo: 1284.8,
-      battery: 71,        // 电量百分比
-      voltage: 38.5,      // 电压
+      battery: 90,        // 电量百分比
+      voltage: 40.1,      // 电压
       assistLevel: 30,
       assistPower: 440,
       motorPower: 630,
-      gyro: 5.2,          // 坡度角度（°），对应约 9% 坡度
+      gyro: 11.5,         // 坡度角度（°），对应约 20% 坡度
       cadence: 58,
-      controllerTemp: 25.4,
-      motorTemp: 28.1,
+      controllerTemp: 20.4,
+      motorTemp: 23.0,
     });
   }
 

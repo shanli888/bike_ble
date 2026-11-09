@@ -32,15 +32,15 @@
       app._internal.log('warn', '当前浏览器不支持 Web Bluetooth。iOS 请使用 Bluefy 打开。');
     }
 
-    // 演示数据：仅在“断开时显示演示数据”开启时运行
-    if (app.state.prefs.simulateWhenDisconnected) {
-      root.LVBU.sim.seed();
-      stickDemo = setInterval(() => {
-        const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
-        if (on && !root.LVBU.sim.running) root.LVBU.sim.start();
-        if (!on && root.LVBU.sim.running) root.LVBU.sim.stop();
-      }, 800);
-    }
+    // 演示数据：未连接时填充示例数据（默认开启，便于预览界面）
+    root.LVBU.sim.seed();
+    const simulate = () => {
+      const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
+      if (on && !root.LVBU.sim.running) root.LVBU.sim.start();
+      if (!on && root.LVBU.sim.running) root.LVBU.sim.stop();
+    };
+    stickDemo = setInterval(simulate, 800);
+    simulate(); // 立即执行一次
 
     wireSlider();
     renderAll();

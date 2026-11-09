@@ -83,8 +83,8 @@ test('C0 电压回复：状态 01，末四位十进制 /10', () => {
   const hex = 'C0F866855030090179010385';
   const { update } = adapter.parseReply(hex, prefs());
   assert.strictEqual(update.voltage, 38.5);
-  // 电压附带估算电量百分比
-  assert.strictEqual(update.battery, 71);
+  // 电压附带估算电量百分比（分段曲线：38.5V ≈ 72%）
+  assert.strictEqual(update.battery, 72);
 });
 
 test('C0 电压回复：分隔符空格也能解析', () => {
@@ -118,10 +118,12 @@ test('不匹配的回复被忽略', () => {
   assert.deepStrictEqual(update, {});
 });
 
-test('电压→电量百分比估算（10S 锂电 30~42V）', () => {
-  assert.strictEqual(adapter.voltageToPercent(42), 100);
-  assert.strictEqual(adapter.voltageToPercent(30), 0);
-  assert.strictEqual(adapter.voltageToPercent(36), 50);
+test('电压→电量百分比估算（36V 锂电池 10 串，分段曲线）', () => {
+  assert.strictEqual(adapter.voltageToPercent(42), 100); // 满电
+  assert.strictEqual(adapter.voltageToPercent(40.1), 90); // 参考点
+  assert.strictEqual(adapter.voltageToPercent(38.5), 72);
+  assert.strictEqual(adapter.voltageToPercent(36), 45); // 标称电压
+  assert.strictEqual(adapter.voltageToPercent(30), 0); // 截止
   assert.strictEqual(adapter.voltageToPercent(45), 100); // 超上限钳制
   assert.strictEqual(adapter.voltageToPercent(20), 0); // 低于下限钳制
   assert.strictEqual(adapter.voltageToPercent(null), null);

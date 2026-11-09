@@ -116,6 +116,8 @@
     if (prefs.imei == null) prefs.imei = '866855030090179';
     prefs.wheelInch = 26; // 固定 26 寸，覆盖旧值
     delete prefs.unit; // 移除旧的速度单位选项
+    // 强制开启演示数据（用户请求：未连接时填充示例数据看效果）
+    if (prefs.simulateWhenDisconnected !== true) prefs.simulateWhenDisconnected = true;
     return prefs;
   }
 
