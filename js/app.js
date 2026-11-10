@@ -332,6 +332,27 @@
     }
   }
 
+  /** 仅下发手动助力百分比（随时可用，不要求停车），范围 0~99 */
+  async function applyAssist() {
+    if (!state.transport || state.transport.state.status !== 'ready') {
+      toast('请先连接设备', 'error');
+      return false;
+    }
+    const value = Math.min(99, Math.max(0, Math.round(state.draft.value || 0)));
+    try {
+      await send({ kind: 'percent', percent: value });
+      state.draft.value = value;
+      state.confirmed.value = value;
+      state.mode = state.draft.mode;
+      state.draft.dirty = false;
+      toast('助力已调整：' + value + '%', 'success');
+      changed();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   async function stopAssist() {
     try {
       await send({ kind: 'stop' });
@@ -423,6 +444,7 @@
     sendRaw,
     setDraft,
     confirmParked,
+    applyAssist,
     stopAssist,
     parkedNow,
     setWheel,

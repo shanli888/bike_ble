@@ -125,9 +125,9 @@
         data = padHex(MODE_CODES[command.mode] || command.mode, 2);
         break;
       case 'percent':
-        // A5 手动功率百分比；原厂 100% 边界有疑，保留接口但默认不使用
+        // A5 手动助力百分比，范围 0~99（100% 边界原厂有疑，不主动下发）
         cmd = CMDS.setPower;
-        data = padHex(command.percent, 2);
+        data = padHex(Math.min(99, Math.max(0, Math.round(Number(command.percent) || 0))), 2);
         break;
       case 'wheel':
         cmd = CMDS.setTire;

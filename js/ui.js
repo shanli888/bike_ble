@@ -190,6 +190,14 @@
       if (!requireParked('陀螺仪校准')) return;
       app.calibrateGyro();
     });
+    $('#btnRestart').addEventListener('click', async () => {
+      if (app.state.conn.status !== 'ready') {
+        toast('请先连接设备', 'error');
+        return;
+      }
+      if (!confirm('确定重启控制器？重启期间会短暂断开连接。')) return;
+      await app.restartDevice();
+    });
 
     $('#setService').addEventListener('change', (e) =>
       app.updatePrefs({ connection: { serviceUuid: e.target.value.trim() } })
@@ -242,6 +250,15 @@
     return true;
   }
 
+  /** 助力百分比可随时调整，只需已连接 */
+  function requireConnected() {
+    const sim = root.LVBU.sim;
+    return app.state.conn.status === 'ready' || (sim && sim.running);
+  }
+
+  /** 助力百分比有效范围 0~99（100% 由设备边界处理，不主动下发） */
+  const PCT_MAX = 99;
+
   /** 仅演示模式：直接改状态，不用连接设备 */
   function simConfirm() {
     const d = app.state.draft;
@@ -255,9 +272,9 @@
   function nudge(dir) {
     const step = app.state.prefs.sliderStep || 5;
     const cur = app.state.draft.value || 0;
-    const next = util.clamp(cur + dir * step, 0, 100);
+    const next = util.clamp(cur + dir * step, 0, PCT_MAX);
     if (next === cur) return;
-    if (!requireParked('调整助力')) return;
+    if (!requireConnected()) return;
     app.setDraft({ value: next });
   }
 
@@ -269,14 +286,13 @@
     });
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
-      const manual = app.state.draft.mode === 'manual';
-      $('#assistHint').textContent = manual ? '手动 0~100%' : '手动 0~100%';
+      els.hint.textContent = '手动 0~99%';
     });
     els.slider.addEventListener('change', () => {
-      const v = Number(els.slider.value);
+      const v = Math.min(PCT_MAX, Number(els.slider.value));
       els.slider.dataset.touched = '0';
       if (v === startValue) return;
-      if (!requireParked('调整助力')) {
+      if (!requireConnected()) {
         els.slider.value = startValue;
         els.assistValue.textContent = startValue;
         return;
@@ -294,20 +310,22 @@
     const d = app.state.draft;
     const c = app.state.confirmed;
     const sim = root.LVBU.sim;
+    // 仅调整手动百分比（模式未变）时，随时可下发，不要求停车
+    const onlyPercent = d.mode === 'manual' && c.mode === 'manual';
     if (app.state.conn.status === 'ready') {
       if (d.mode === c.mode && d.value === c.value) {
-        if (d.mode === 'manual') {
-          if (!requireParked('手动控制')) return;
-        } else {
-          toast('参数未修改，无需确认');
-          return;
-        }
+        toast('参数未修改，无需确认');
+        return;
       }
-      await app.confirmParked();
+      if (onlyPercent) {
+        await app.applyAssist();
+      } else {
+        await app.confirmParked();
+      }
       return;
     }
     if (sim && sim.running) {
-      if (!requireParked('演示确认')) return;
+      if (!onlyPercent && !requireParked('演示确认')) return;
       simConfirm();
       return;
     }
@@ -453,12 +471,13 @@
     if (levelsWrap) levelsWrap.style.display = isManual ? 'none' : 'flex';
     if (manualWrap) manualWrap.style.display = isManual ? 'grid' : 'none';
 
-    // 禁用状态
-    els.slider.disabled = !ready || !parked;
-    els.btnMinus.disabled = !ready || !parked || draft.value <= 0;
-    els.btnPlus.disabled = !ready || !parked || draft.value >= 100;
+    // 手动百分比可随时调整（只要已连接）；档位按钮仍需停车
+    els.slider.disabled = !ready;
+    els.btnMinus.disabled = !ready || draft.value <= 0;
+    els.btnPlus.disabled = !ready || draft.value >= PCT_MAX;
+    els.slider.max = String(PCT_MAX);
 
-    // 档位按钮状态
+    // 档位按钮状态（改档位仍需停车）
     $$('.level-btn', levelsWrap).forEach((btn) => {
       const lvl = Number(btn.dataset.level);
       btn.classList.toggle('is-active', draft.value === lvl && !isManual);
@@ -466,18 +485,26 @@
     });
 
     // 顶部提示文案
-    els.hint.textContent = isManual ? '手动 0~100%' : `${app.modeLabel(draft.mode)} · 档位 ${draft.value}`;
+    els.hint.textContent = isManual ? '手动 0~99%' : `${app.modeLabel(draft.mode)} · 档位 ${draft.value}`;
 
     if (!ready) {
-      els.note.textContent = '未连接设备 · 连接后可在停车状态下调整助力';
+      els.note.textContent = '未连接设备 · 连接后即可调整助力';
       els.panel.classList.add('is-locked');
       els.panel.classList.remove('is-parked-ready');
-    } else if (!parked) {
-      els.note.textContent = `调整助力需停车：当前 ${util.fixed(app.displaySpeed(bike.speed), 1)} ${app.speedLabel()}（< 0.5 可确认）`;
+    } else if (isManual && draft.dirty) {
+      els.note.textContent = '拖动滑杆后点击右侧按钮下发（行驶中也可调整）';
+      els.panel.classList.remove('is-locked');
+      els.panel.classList.add('is-parked-ready');
+    } else if (!isManual && !parked) {
+      els.note.textContent = `切换模式需停车：当前 ${util.fixed(app.displaySpeed(bike.speed), 1)} ${app.speedLabel()}`;
       els.panel.classList.add('is-locked');
       els.panel.classList.remove('is-parked-ready');
-    } else if (draft.dirty) {
-      els.note.textContent = '已停车 · 点击右侧按钮确认下发新参数';
+    } else if (!isManual && draft.dirty) {
+      els.note.textContent = '已停车 · 点击右侧按钮确认切换模式';
+      els.panel.classList.remove('is-locked');
+      els.panel.classList.add('is-parked-ready');
+    } else if (isManual) {
+      els.note.textContent = '行驶中也可调整助力百分比';
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
     } else {
@@ -490,8 +517,9 @@
     const modeName = app.modeLabel(confirmed.mode);
     els.confirmChip.classList.remove('is-ready', 'is-done');
     if (draft.dirty) {
-      els.confirmChip.textContent = parked ? '确认下发' : '待停车确认';
-      els.confirmChip.classList.toggle('is-ready', parked);
+      const canSend = isManual || parked; // 手动百分比随时可发
+      els.confirmChip.textContent = canSend ? '确认下发' : '待停车确认';
+      els.confirmChip.classList.toggle('is-ready', canSend);
     } else if (ready) {
       els.confirmChip.textContent = `${modeName} · 已确认`;
       els.confirmChip.classList.add('is-done');
@@ -499,8 +527,7 @@
       els.confirmChip.textContent = `${modeName} · 未连接`;
     }
 
-    // 方案 B 备用样式：未确认时顶部提示语改为 amber 警示
-    els.note.classList.toggle('is-warn', draft.dirty && !parked);
+    els.note.classList.toggle('is-warn', draft.dirty && !isManual && !parked);
   }
 
   /** 渲染 10 格进度条 */
@@ -516,11 +543,31 @@
   function renderCards() {
     const b = app.state.bike;
 
-    // ===== 坡度 =====
-    const slope = b.gyro != null ? Math.round(Math.tan((b.gyro * Math.PI) / 180) * 100) : null;
-    setCard('cardGyro', slope, (v) => `${v}%`);
-    // 坡度进度条：0~30% 映射到 10 格
-    renderBars('slopeGrid', slope == null ? null : util.clamp(slope / 30, 0, 1), 'high');
+    // ===== 陀螺仪角度 / 坡度 =====
+    // 陀螺仪返回的是角度（°）。真实骑行坡度不会超过约 25°（≈47%），
+    // 超过该范围说明是设备姿态/校准误差，直接显示角度而不是爆炸的 tan 值。
+    const MAX_SLOPE_DEG = 25;
+    const angle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
+    let slope = null;       // 坡度百分比
+    let useAngle = false;   // 是否退化为显示角度
+    if (angle != null) {
+      if (Math.abs(angle) <= MAX_SLOPE_DEG) {
+        slope = Math.round(Math.tan((angle * Math.PI) / 180) * 100);
+      } else {
+        useAngle = true;
+      }
+    }
+    const slopeTitle = $('#slopeTitle');
+    if (useAngle) {
+      if (slopeTitle) slopeTitle.textContent = '角度';
+      setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
+      renderBars('slopeGrid', util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
+    } else {
+      if (slopeTitle) slopeTitle.textContent = '坡度';
+      setCard('cardGyro', slope, (v) => `${v}%`);
+      // 坡度进度条：0~30% 映射到 10 格
+      renderBars('slopeGrid', slope == null ? null : util.clamp(Math.abs(slope) / 30, 0, 1), 'high');
+    }
 
     // ===== 电量 =====
     const voltEl = $('[data-field="voltage"]');
