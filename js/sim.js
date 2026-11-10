@@ -63,7 +63,7 @@
     if (script.t % 3 < dt) {
       b.controllerTemp = Math.round(rand(20, 26) * 10) / 10;
       b.motorTemp = b.controllerTemp + rand(1, 3);
-      b.gyro = Math.round(rand(2, 6) * 10) / 10; // 坡度角度 2~6°
+      b.gyro = Math.round(rand(0.5, 3) * 10) / 10; // 陀螺仪角度 0.5~3°
       b.voltage = Math.round((37.6 + rand(-0.3, 0.3)) * 10) / 10;
     }
 
@@ -96,7 +96,7 @@
       assistLevel: 30,
       assistPower: 440,
       motorPower: 630,
-      gyro: 11.5,         // 坡度角度（°），对应约 20% 坡度
+      gyro: 1.5,          // 陀螺仪角度（°）
       cadence: 58,
       controllerTemp: 20.4,
       motorTemp: 23.0,

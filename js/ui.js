@@ -543,31 +543,12 @@
   function renderCards() {
     const b = app.state.bike;
 
-    // ===== 陀螺仪角度 / 坡度 =====
-    // 陀螺仪返回的是角度（°）。真实骑行坡度不会超过约 25°（≈47%），
-    // 超过该范围说明是设备姿态/校准误差，直接显示角度而不是爆炸的 tan 值。
-    const MAX_SLOPE_DEG = 25;
+    // ===== 陀螺仪角度 =====
+    // 直接显示设备返回的陀螺仪角度（°），不做坡度换算
     const angle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
-    let slope = null;       // 坡度百分比
-    let useAngle = false;   // 是否退化为显示角度
-    if (angle != null) {
-      if (Math.abs(angle) <= MAX_SLOPE_DEG) {
-        slope = Math.round(Math.tan((angle * Math.PI) / 180) * 100);
-      } else {
-        useAngle = true;
-      }
-    }
-    const slopeTitle = $('#slopeTitle');
-    if (useAngle) {
-      if (slopeTitle) slopeTitle.textContent = '角度';
-      setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
-      renderBars('slopeGrid', util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
-    } else {
-      if (slopeTitle) slopeTitle.textContent = '坡度';
-      setCard('cardGyro', slope, (v) => `${v}%`);
-      // 坡度进度条：0~30% 映射到 10 格
-      renderBars('slopeGrid', slope == null ? null : util.clamp(Math.abs(slope) / 30, 0, 1), 'high');
-    }
+    setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
+    // 进度条：角度绝对值 0~90° 映射到 10 格
+    renderBars('slopeGrid', angle == null ? null : util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
 
     // ===== 电量 =====
     const voltEl = $('[data-field="voltage"]');
