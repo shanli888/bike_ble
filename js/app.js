@@ -26,7 +26,7 @@
     bike: {
       speed: 0, avgSpeed: 0, maxSpeed: 0, trip: 0, odo: 0,
       battery: null, voltage: null, assistLevel: 0, assistPower: null,
-      motorPower: null, gyro: null, cadence: null,
+      motorPower: null, gyro: null, gyroRaw: null, cadence: null,
       controllerTemp: null, motorTemp: null,
     },
     mode: 'manual',

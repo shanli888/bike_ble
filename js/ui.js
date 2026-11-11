@@ -545,8 +545,13 @@
 
     // ===== 陀螺仪角度 =====
     // 直接显示设备返回的陀螺仪角度（°），不做坡度换算
-    const angle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
+    // 骑行时颠簸会造成瞬时尖峰，超过 ±90° 的读数视为异常（设备姿态范围外）
+    let angle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
+    if (angle != null && Math.abs(angle) > 90) angle = null; // 丢弃异常尖峰
     setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
+    // 原始值（十进制，未除以 10）用于核对缩放系数
+    const rawEl = $('[data-field="gyroRaw"]');
+    if (rawEl) rawEl.textContent = b.gyroRaw != null ? `raw ${parseInt(b.gyroRaw, 10)}` : '';
     // 进度条：角度绝对值 0~90° 映射到 10 格
     renderBars('slopeGrid', angle == null ? null : util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
 

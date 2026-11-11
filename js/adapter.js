@@ -188,7 +188,11 @@
 
     // 陀螺仪/坡度 BD
     const gyro = readValue(CMDS.gyro, 10);
-    if (gyro != null) update.gyro = gyro;
+    if (gyro != null) {
+      update.gyro = gyro;
+      // 保留原始十六进制数值，便于实机比对缩放系数
+      update.gyroRaw = clean.substr(20, 4);
+    }
 
     // 里程 B1：米转公里
     const trip = readValue(CMDS.trip, 10);
