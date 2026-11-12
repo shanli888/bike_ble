@@ -190,6 +190,10 @@
       if (!requireParked('陀螺仪校准')) return;
       app.calibrateGyro();
     });
+    $('#btnResetRide').addEventListener('click', () => {
+      if (!confirm('确定清零平均速度、最高速度和里程？')) return;
+      app.resetRide();
+    });
     $('#btnRestart').addEventListener('click', async () => {
       if (app.state.conn.status !== 'ready') {
         toast('请先连接设备', 'error');

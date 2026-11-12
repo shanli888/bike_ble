@@ -18,6 +18,19 @@
 
   const MAX_LOG = 400;
 
+  /* ---------------- 骑行统计（本地累加） ---------------- */
+  // 统计规则：
+  //   - 每次收到速度（BF 回复）记为一次采样
+  //   - 里程：速度 × 采样间隔，累加（km）
+  //   - 平均速度：总里程 / 有速度的累计时长（停车不计入，避免拉低均值）
+  //   - 最高速度：所有采样的最大值
+  const ride = {
+    lastSampleAt: 0,   // 上次采样时间（ms）
+    movingMs: 0,       // 有速度的累计时长（ms）
+    distanceKm: 0,     // 累计里程（km）
+    maxSpeed: 0,       // 最高速度
+  };
+
   const state = {
     page: 'dash',
     prefs: config.loadPrefs(),
@@ -118,12 +131,21 @@
       if (s.status === 'ready') {
         state.conn.chars = s.chars;
         state.rideStartAt = Date.now();
+        // 新一次连接：重置骑行统计，避免跨行程累加
+        ride.lastSampleAt = 0;
+        ride.movingMs = 0;
+        ride.distanceKm = 0;
+        ride.maxSpeed = 0;
+        state.bike.avgSpeed = 0;
+        state.bike.maxSpeed = 0;
+        state.bike.trip = 0;
         onConnected();
         startPolling();
       }
       if (s.status === 'disconnected') {
         state.conn.chars = null;
         state.conn.rssi = null;
+        ride.lastSampleAt = 0; // 断开后重置采样基准，重连后重新计时
         stopPolling();
       }
       changed();
@@ -159,10 +181,14 @@
 
   function applyBikeUpdate(u) {
     const b = state.bike;
+    // 速度交给本地统计模块处理（计算里程/平均/最高）
+    if (u.speed != null) markSpeedSample(u.speed);
+
     for (const k of Object.keys(u)) {
       if (!(k in b) && k !== 'mode') continue;
-      if (k === 'maxSpeed') b.maxSpeed = Math.max(b.maxSpeed || 0, u.maxSpeed);
-      else b[k] = u[k];
+      // 这三个由本地统计产生，不接受设备直接覆盖
+      if (k === 'speed' || k === 'avgSpeed' || k === 'maxSpeed' || k === 'trip') continue;
+      b[k] = u[k];
     }
   }
 
@@ -384,7 +410,51 @@
     changed();
   }
 
-  /* ---------------- 定时刷新（平均/最高速度、超时提示） ---------------- */
+  /** 收到一次速度采样（来自设备 BF 回复） */
+  function markSpeedSample(speed) {
+    const b = state.bike;
+    const now = Date.now();
+    const v = Number(speed);
+    if (!isFinite(v) || v < 0) return;
+
+    const prev = ride.lastSampleAt;
+    b.speed = v;
+
+    if (prev) {
+      let dt = (now - prev) / 1000; // 秒
+      // 间隔过长（>10s，如断线/切后台）视为无效时间段，不计入
+      if (dt > 0 && dt <= 10) {
+        ride.distanceKm += (v * dt) / 3600; // km/h × s ÷ 3600
+        if (v > 0.5) ride.movingMs += dt * 1000;
+      }
+    }
+    ride.lastSampleAt = now;
+
+    if (v > ride.maxSpeed) ride.maxSpeed = v;
+
+    // 平均速度 = 距离 / 移动时间
+    const hours = ride.movingMs / 3600000;
+    b.avgSpeed = hours > 0.0001 ? ride.distanceKm / hours : 0;
+    b.maxSpeed = ride.maxSpeed;
+    b.trip = ride.distanceKm;
+
+    changed();
+  }
+
+  /** 重置本次骑行统计（用户主动清零） */
+  function resetRide() {
+    ride.lastSampleAt = 0;
+    ride.movingMs = 0;
+    ride.distanceKm = 0;
+    ride.maxSpeed = 0;
+    state.bike.avgSpeed = 0;
+    state.bike.maxSpeed = 0;
+    state.bike.trip = 0;
+    changed();
+    toast('骑行数据已清零');
+  }
+
+  /* ---------------- 定时刷新（超时提示） ---------------- */
   function startClock() {
     if (tickTimer) return;
     tickTimer = setInterval(() => {
@@ -395,12 +465,6 @@
         emit('stale', state.now - state.lastRxAt);
       }
     }, 250);
-  }
-
-  function markSpeedSample(speed) {
-    const b = state.bike;
-    b.speed = speed;
-    b.maxSpeed = Math.max(b.maxSpeed || 0, speed);
   }
 
   /* ---------------- 轮径设置 ---------------- */
@@ -455,6 +519,7 @@
     clearLogs,
     applyBikeUpdate,
     markSpeedSample,
+    resetRide,
     displaySpeed,
     speedLabel,
     modeLabel,

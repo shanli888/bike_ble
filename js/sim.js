@@ -48,15 +48,9 @@
     const target = (s.confirmed.value || 0) > 0 ? 12 + (s.confirmed.value || 0) * 0.12 : 0;
     const cur = b.speed || 0;
     const next = Math.max(0, cur + (target - cur) * Math.min(1, dt * 0.8) + wobble * dt * 1.5);
+    // 交给 app 的统计模块统一计算里程/平均/最高速度
     app.markSpeedSample(Math.round(next * 10) / 10);
-
-    // 本次里程
-    b.trip = Math.round((b.trip + (next * dt) / 3600) * 100) / 100;
-    b.odo = 1284.6 + b.trip;
-
-    // 平均速度：出发以来
-    const elapsed = Math.max(1, (Date.now() - s.rideStartAt) / 1000);
-    b.avgSpeed = Math.round((b.trip / (elapsed / 3600)) * 10) / 10 || 0;
+    b.odo = 1284.6 + (b.trip || 0);
 
     // 电量缓慢下降，温度/坡度缓慢变化
     if (b.battery != null) b.battery = Math.max(0, Math.round((b.battery - next * dt * 0.02) * 10) / 10);
@@ -87,9 +81,7 @@
     const b = app.state.bike;
     Object.assign(b, {
       speed: 18.6,
-      avgSpeed: 15.2,
-      maxSpeed: 24.8,
-      trip: 3.4,
+      // avgSpeed / maxSpeed / trip 由 app 的统计模块实时累加，这里不预设
       odo: 1284.8,
       battery: 90,        // 电量百分比
       voltage: 40.1,      // 电压
