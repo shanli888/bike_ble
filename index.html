@@ -72,9 +72,9 @@
         <span class="panel__title">
           <span class="i i--orange" data-icon="assist" data-size="20"></span>
           <b>助力控制</b>
-          <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
-            <span class="i remote-chip__icon" data-icon="remote" data-size="20"></span>
-          </span>
+        </span>
+        <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
+          <span class="i remote-chip__icon" data-icon="remote" data-size="20"></span>
         </span>
       </div>
 
@@ -110,18 +110,6 @@
 
     <!-- 数据卡片 -->
     <section class="cards" aria-label="实时数据">
-      <article class="card card--cyan" id="cardGyro">
-        <header>
-          <span class="i" data-icon="gyro" data-size="16"></span>
-          <span>陀螺仪</span>
-        </header>
-        <div class="barframe">
-          <div class="bgrid" data-field="slopeGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        </div>
-        <div class="card__value" data-field="slope">--</div>
-        <div class="card__sub" data-field="gyroRaw"></div>
-      </article>
-
       <article class="card card--green" id="cardBattery">
         <header>
           <span class="i" data-icon="battery" data-size="16"></span>
@@ -143,9 +131,20 @@
         </div>
         <div class="card__value" data-field="temp">--</div>
       </article>
+
+      <article class="card card--cyan" id="cardGyro">
+        <header>
+          <span class="i" data-icon="gyro" data-size="16"></span>
+          <span>陀螺仪</span>
+        </header>
+        <div class="barframe">
+          <div class="bgrid" data-field="slopeGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="card__value" data-field="slope">--</div>
+      </article>
     </section>
 
-    <div class="buildinfo" id="buildInfo">v1.8.0 · 2026-11-12 17:30</div>
+    <div class="buildinfo" id="buildInfo">v1.8.1 · 2026-11-12 17:45</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -326,7 +325,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v1.8.0 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v1.8.1 · LVBU 码表</p>
     </div>
   </section>
 
@@ -350,15 +349,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=31"></script>
-<script src="js/protocol.js?v=31"></script>
-<script src="js/config.js?v=31"></script>
-<script src="js/adapter.js?v=31"></script>
-<script src="js/ble.js?v=31"></script>
-<script src="js/remote.js?v=31"></script>
-<script src="js/app.js?v=31"></script>
-<script src="js/icons.js?v=31"></script>
-<script src="js/sim.js?v=31"></script>
-<script src="js/ui.js?v=31"></script>
+<script src="js/util.js?v=32"></script>
+<script src="js/protocol.js?v=32"></script>
+<script src="js/config.js?v=32"></script>
+<script src="js/adapter.js?v=32"></script>
+<script src="js/ble.js?v=32"></script>
+<script src="js/remote.js?v=32"></script>
+<script src="js/app.js?v=32"></script>
+<script src="js/icons.js?v=32"></script>
+<script src="js/sim.js?v=32"></script>
+<script src="js/ui.js?v=32"></script>
 </body>
 </html>

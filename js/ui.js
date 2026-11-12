@@ -151,11 +151,6 @@
         return;
       }
       const key = btn.dataset.mode;
-      // 切换模式需停车（改助力行为，安全考虑）
-      if (key !== app.state.draft.mode && !app.parkedNow()) {
-        toast(`切换模式需停车：当前 ${util.fixed(app.state.bike.speed, 1)} km/h`, 'error');
-        return;
-      }
       const def = config.RIDE_MODES.find((m) => m.key === key);
       const draft = { mode: key };
       if (def && def.assist != null) draft.value = def.assist;
@@ -167,7 +162,10 @@
     $('#levelRow').addEventListener('click', async (e) => {
       const btn = e.target.closest('.level-btn');
       if (!btn) return;
-      if (!requireParked('选择档位')) return;
+      if (!requireConnected()) {
+        toast('请先连接设备', 'error');
+        return;
+      }
       app.setDraft({ value: Number(btn.dataset.level) });
       await app.applyAssistMode();
     });
@@ -274,13 +272,14 @@
     });
   }
 
-  /* ======================= 助力：停车门槛 ======================= */
+  /* ======================= 陀螺仪校准：停车门槛 ======================= */
+  // 仅校准这类会改变电机标定的操作要求停车；助力调整已放开限制
   function requireParked(action) {
     const speed = app.state.bike.speed || 0;
     const sim = root.LVBU.sim;
-    if (app.state.conn.status !== 'ready' && !(sim && sim.running)) return false; // 未连接时按钮本应禁用
+    if (app.state.conn.status !== 'ready' && !(sim && sim.running)) return false;
     if (!app.parkedNow()) {
-      toast(`${action}需停车确认：当前 ${util.fixed(app.displaySpeed(speed), 1)} ${app.speedLabel()}`, 'error');
+      toast(`${action}需停车：当前 ${util.fixed(app.displaySpeed(speed), 1)} ${app.speedLabel()}`, 'error');
       return false;
     }
     return true;
@@ -456,11 +455,10 @@
   }
 
   function renderAssist() {
-    const { conn, draft, confirmed, bike, prefs } = app.state;
+    const { conn, draft, confirmed, prefs } = app.state;
     const sim = root.LVBU.sim;
     const demo = !!prefs.simulateWhenDisconnected && sim && sim.running;
     const ready = conn.status === 'ready' || demo;
-    const parked = app.parkedNow();
 
     // 模式按钮
     $$('.mode', els.modeRow).forEach((btn) => {
@@ -481,17 +479,16 @@
     if (levelsWrap) levelsWrap.style.display = isManual ? 'none' : 'flex';
     if (manualWrap) manualWrap.style.display = isManual ? 'grid' : 'none';
 
-    // 手动百分比可随时调整（只要已连接）；档位按钮仍需停车
+    // 未连接时禁用所有助力控件；连接后随时可用（无停车限制）
     els.slider.disabled = !ready;
     els.btnMinus.disabled = !ready || draft.value <= 0;
     els.btnPlus.disabled = !ready || draft.value >= PCT_MAX;
     els.slider.max = String(PCT_MAX);
 
-    // 档位按钮状态（改档位仍需停车）
     $$('.level-btn', levelsWrap).forEach((btn) => {
       const lvl = Number(btn.dataset.level);
       btn.classList.toggle('is-active', draft.value === lvl && !isManual);
-      btn.disabled = !ready || !parked;
+      btn.disabled = !ready;
     });
 
     els.note.hidden = !ready; // 未连接时整行隐藏
@@ -500,26 +497,10 @@
       els.note.textContent = '';
       els.panel.classList.add('is-locked');
       els.panel.classList.remove('is-parked-ready');
-    } else if (isManual && draft.dirty) {
-      els.note.textContent = '拖动滑杆后点击右侧按钮下发（行驶中也可调整）';
-      els.panel.classList.remove('is-locked');
-      els.panel.classList.add('is-parked-ready');
-    } else if (!isManual && !parked) {
-      els.note.textContent = `切换模式需停车：当前 ${util.fixed(app.displaySpeed(bike.speed), 1)} ${app.speedLabel()}`;
-      els.panel.classList.add('is-locked');
-      els.panel.classList.remove('is-parked-ready');
-    } else if (!isManual && draft.dirty) {
-      els.note.textContent = '已停车 · 点击右侧按钮确认切换模式';
-      els.panel.classList.remove('is-locked');
-      els.panel.classList.add('is-parked-ready');
-    } else if (isManual) {
-      els.note.textContent = '行驶中也可调整助力百分比';
-      els.panel.classList.remove('is-locked');
-      els.panel.classList.add('is-parked-ready');
     } else {
-      els.note.textContent = '已停车 · 可直接调整助力档位';
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
+      els.note.textContent = isManual ? '拖动滑杆调整助力，实时下发给控制器' : '点击档位调整助力，实时下发';
     }
 
     // 闪控状态提示（覆盖上面的默认提示）
@@ -527,15 +508,13 @@
       const rs = app.getRemoteState();
       if (rs.stopped) {
         els.note.textContent = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
-        els.panel.classList.add('is-parked-ready');
       } else if (rs.frozenMs > 0) {
         els.note.textContent = `闪控操作冻结中 · ${Math.ceil(rs.frozenMs / 1000)} 秒后可再按`;
       }
     }
 
     renderRemoteChip();
-
-    els.note.classList.toggle('is-warn', draft.dirty && !isManual && !parked);
+    els.note.classList.remove('is-warn');
   }
 
   /* ---------------- 陀螺仪滑动中位数滤波 ---------------- */
@@ -583,9 +562,6 @@
     if (rawAngle != null) pushGyroSample(rawAngle);
     const angle = getFilteredGyro();
     setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
-    // 原始值（十进制，未除以 10）用于核对
-    const rawEl = $('[data-field="gyroRaw"]');
-    if (rawEl) rawEl.textContent = b.gyroRaw != null ? `raw ${parseInt(b.gyroRaw, 10)}` : '';
     // 进度条：角度绝对值 0~90° 映射到 10 格
     renderBars('slopeGrid', angle == null ? null : util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
 
