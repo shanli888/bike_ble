@@ -75,7 +75,7 @@
     els.statMax = $('#statMax');
     els.statTrip = $('#statTrip');
     els.panel = $('#assistPanel');
-    els.hint = $('#assistHint');
+    
     els.note = $('#assistNote');
     els.confirmChip = $('#confirmChip');
     els.modeRow = $('#modeRow');
@@ -314,7 +314,6 @@
     });
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
-      els.hint.textContent = '手动 0~99%';
     });
     els.slider.addEventListener('change', () => {
       const v = Math.min(PCT_MAX, Number(els.slider.value));
@@ -511,8 +510,6 @@
       btn.disabled = !ready || !parked;
     });
 
-    // 顶部提示文案
-    els.hint.textContent = isManual ? '手动 0~99%' : `${app.modeLabel(draft.mode)} · 档位 ${draft.value}`;
     els.note.hidden = !ready; // 未连接时整行隐藏
 
     if (!ready) {
@@ -565,7 +562,7 @@
       els.confirmChip.textContent = `${modeName} · 已确认`;
       els.confirmChip.classList.add('is-done');
     } else {
-      els.confirmChip.textContent = `${modeName} · 未连接`;
+      els.confirmChip.textContent = '未连接';
     }
 
     els.note.classList.toggle('is-warn', draft.dirty && !isManual && !parked);

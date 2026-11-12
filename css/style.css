@@ -222,39 +222,18 @@ button { cursor: pointer; border: 0; background: none; }
 .panel__title b { font-size: 19px; font-weight: 600; white-space: nowrap; }
 .panel__title em { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
-/* 第二行：助力范围提示（左）+ 闪控状态（右） */
-.panel__sub {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-  flex-wrap: nowrap;
-}
-.panel__hint { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
-
-/* 闪控连接状态：纯图标，连上绿色，未连灰色 */
+/* 闪控连接状态：纯图标（无边框），连上绿色，未连灰色 */
 .remote-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
   flex: none;
   color: #565d72;                                   /* 未连接：灰 */
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  transition: color 0.25s, background 0.25s, border-color 0.25s;
+  transition: color 0.25s;
 }
-.remote-chip__icon svg { width: 18px; height: 18px; }
-.remote-chip.is-ready {
-  color: var(--green);                              /* 已连接：绿 */
-  background: rgba(61, 220, 112, 0.12);
-  border-color: rgba(61, 220, 112, 0.38);
-  box-shadow: 0 0 8px rgba(61, 220, 112, 0.25);
-}
-.remote-chip.is-busy { color: var(--amber); background: rgba(251, 176, 39, 0.1); border-color: rgba(251, 176, 39, 0.3); }
+.remote-chip__icon svg { width: 20px; height: 20px; }
+.remote-chip.is-ready { color: var(--green); }      /* 已连接：绿 */
+.remote-chip.is-busy { color: var(--amber); }
 
 .chip {
   flex: none;
