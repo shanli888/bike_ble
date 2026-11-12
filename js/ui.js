@@ -513,9 +513,10 @@
 
     // 顶部提示文案
     els.hint.textContent = isManual ? '手动 0~99%' : `${app.modeLabel(draft.mode)} · 档位 ${draft.value}`;
+    els.note.hidden = !ready; // 未连接时整行隐藏
 
     if (!ready) {
-      els.note.textContent = '未连接设备 · 连接后即可调整助力';
+      els.note.textContent = '';
       els.panel.classList.add('is-locked');
       els.panel.classList.remove('is-parked-ready');
     } else if (isManual && draft.dirty) {

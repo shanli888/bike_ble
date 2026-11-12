@@ -222,13 +222,14 @@ button { cursor: pointer; border: 0; background: none; }
 .panel__title b { font-size: 19px; font-weight: 600; white-space: nowrap; }
 .panel__title em { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
-/* 第二行：助力范围提示 + 闪控状态 */
+/* 第二行：助力范围提示（左）+ 闪控状态（右） */
 .panel__sub {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .panel__hint { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
