@@ -86,7 +86,7 @@
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
     els.remoteChip = $('#remoteChip');
-    els.remoteChipText = $('#remoteChipText');
+    
     els.remoteName = $('#remoteName');
     els.remoteStatus = $('#remoteStatus');
     els.btnRemoteConnect = $('#btnRemoteConnect');
@@ -671,21 +671,23 @@
     renderRemote();
   }
 
-  /** 首页助力面板里的闪控状态标签 */
+  /** 首页助力面板里的闪控状态图标（绿=已连接，灰=未连接） */
   function renderRemoteChip() {
     if (!els.remoteChip) return;
     const r = (app.state.remote) || { status: 'idle' };
     const map = {
-      idle: ['闪控未连接', ''],
-      requesting: ['选择中…', 'is-busy'],
-      connecting: ['连接中…', 'is-busy'],
-      ready: ['闪控已连接', 'is-ready'],
-      disconnected: ['闪控已断开', ''],
-      error: ['闪控错误', ''],
+      idle: ['未连接', ''],
+      requesting: ['选择中', 'is-busy'],
+      connecting: ['连接中', 'is-busy'],
+      ready: ['已连接', 'is-ready'],
+      disconnected: ['已断开', ''],
+      error: ['错误', ''],
     };
-    const [txt, cls] = map[r.status] || map.idle;
+    const [label, cls] = map[r.status] || map.idle;
     els.remoteChip.className = 'remote-chip ' + cls;
-    els.remoteChipText.textContent = txt;
+    // 无文字，仅通过 title/aria 提供给读屏与长按提示
+    els.remoteChip.title = 'BR80 闪控' + label;
+    els.remoteChip.setAttribute('aria-label', 'BR80 闪控' + label);
   }
 
   /** 渲染 BR80 闪控状态 */
