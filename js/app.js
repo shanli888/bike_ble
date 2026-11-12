@@ -36,6 +36,7 @@
     prefs: config.loadPrefs(),
     transport: null,
     conn: { status: 'idle', device: null, error: null, rssi: null, chars: null, kind: null },
+    remote: { status: 'idle', device: null, error: null },
     bike: {
       speed: 0, avgSpeed: 0, maxSpeed: 0, trip: 0, odo: 0,
       battery: null, voltage: null, assistLevel: 0, assistPower: null,
@@ -410,6 +411,59 @@
     changed();
   }
 
+  /* ---------------- BR80 闪控接入 ---------------- */
+  let remoteCtl = null;
+
+  /** 接入闪控控制器（由 ui.js 在 boot 时调用） */
+  function attachRemote(rm) {
+    remoteCtl = rm;
+    rm.on('state', (s) => {
+      state.remote = { status: s.status, device: s.device, error: s.error };
+      changed();
+    });
+    rm.on('device', (d) => {
+      state.remote.device = d;
+      changed();
+    });
+    rm.on('log', (text) => log('info', '[闪控] ' + text));
+    rm.on('raw', (hex) => log('rx', '[闪控] ' + hex));
+    rm.on('key', ({ name }) => onRemoteKey(name));
+    changed();
+  }
+
+  /** 闪控按键 → 调整助力百分比 */
+  async function onRemoteKey(name) {
+    if (name !== 'up' && name !== 'down') {
+      // 左右/主键暂不绑定功能
+      return;
+    }
+    if (state.conn.status !== 'ready') {
+      toast('请先连接助力控制器', 'error');
+      return;
+    }
+    const step = state.prefs.sliderStep || 5;
+    const cur = state.draft.value || 0;
+    const next = Math.max(0, Math.min(99, cur + (name === 'up' ? step : -step)));
+    if (next === cur) {
+      toast(next >= 99 ? '已到最大助力 99%' : '已到最小助力 0%');
+      return;
+    }
+    state.draft.value = next;
+    state.draft.mode = 'manual';
+    state.draft.dirty = true;
+    changed();
+    await applyAssist();
+  }
+
+  async function connectRemote() {
+    if (!remoteCtl) throw new Error('闪控模块未加载');
+    await remoteCtl.connect();
+  }
+
+  function disconnectRemote() {
+    if (remoteCtl) remoteCtl.disconnect();
+  }
+
   /** 收到一次速度采样（来自设备 BF 回复） */
   function markSpeedSample(speed) {
     const b = state.bike;
@@ -520,6 +574,9 @@
     applyBikeUpdate,
     markSpeedSample,
     resetRide,
+    attachRemote,
+    connectRemote,
+    disconnectRemote,
     displaySpeed,
     speedLabel,
     modeLabel,

@@ -26,10 +26,15 @@
     bindAppEvents();
     syncSettingsInputs();
 
-    // 传输层：Web Bluetooth
+    // 传输层：Web Bluetooth（助力控制器）
     app.attachTransport(ble.createTransport(app.state.prefs));
     if (!(ble.supported && ble.supported()) && !app.state.transport.supported()) {
       app._internal.log('warn', '当前浏览器不支持 Web Bluetooth。iOS 请使用 Bluefy 打开。');
+    }
+
+    // BR80 闪控（独立蓝牙设备，可与控制器同时连接）
+    if (root.LVBU.remote) {
+      app.attachRemote(root.LVBU.remote.createRemote());
     }
 
     // 演示数据：开关开启且未连接时，填充固定示例数据
@@ -80,6 +85,10 @@
     els.btnPlus = $('#btnPlus');
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
+    els.remoteName = $('#remoteName');
+    els.remoteStatus = $('#remoteStatus');
+    els.btnRemoteConnect = $('#btnRemoteConnect');
+    els.btnRemoteDisconnect = $('#btnRemoteDisconnect');
     els.devName = $('#devName');
     els.devStatus = $('#devStatus');
     els.devId = $('#devId');
@@ -170,6 +179,15 @@
     $('#btnGuideConnect').addEventListener('click', doScan);
     $('#btnReconnect').addEventListener('click', () => app.reconnect());
     $('#btnDisconnect').addEventListener('click', () => app.disconnect());
+    // 闪控
+    $('#btnRemoteConnect').addEventListener('click', async () => {
+      try {
+        await app.connectRemote();
+      } catch (err) {
+        toast('闪控连接失败：' + (err.message || err), 'error');
+      }
+    });
+    $('#btnRemoteDisconnect').addEventListener('click', () => app.disconnectRemote());
     $('#btnClearLog').addEventListener('click', () => {
       app.clearLogs();
       renderLog(true);
@@ -631,6 +649,28 @@
     els.devNotify.textContent = conn.chars ? conn.chars.notify : '--';
     els.btnDisconnect.disabled = conn.status !== 'ready' && conn.status !== 'disconnected';
     els.btnReconnect.disabled = !conn.device || conn.status === 'connecting' || conn.status === 'discovering' || conn.status === 'ready';
+    renderRemote();
+  }
+
+  /** 渲染 BR80 闪控状态 */
+  function renderRemote() {
+    if (!els.remoteName) return;
+    const r = app.state.remote || { status: 'idle', device: null };
+    const map = {
+      idle: ['未连接', ''],
+      requesting: ['选择中…', 'is-busy'],
+      connecting: ['连接中…', 'is-busy'],
+      ready: ['已连接', 'is-ready'],
+      disconnected: ['已断开', ''],
+      error: ['错误', 'is-error'],
+    };
+    const [txt, cls] = map[r.status] || map.idle;
+    els.remoteName.textContent = r.device ? r.device.name : '未连接';
+    els.remoteStatus.textContent = txt;
+    els.remoteStatus.className = 'pill ' + cls;
+    const busy = r.status === 'requesting' || r.status === 'connecting';
+    els.btnRemoteConnect.disabled = busy || r.status === 'ready';
+    els.btnRemoteDisconnect.disabled = r.status !== 'ready';
   }
 
   /* ======================= 日志 ======================= */

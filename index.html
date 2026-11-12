@@ -180,6 +180,26 @@
       </div>
     </div>
 
+    <div class="section">
+      <h2 class="section__title">BR80 闪控</h2>
+      <div class="devcard">
+        <div class="devcard__top">
+          <span class="devcard__name" id="remoteName">未连接</span>
+          <span class="pill" id="remoteStatus">未连接</span>
+        </div>
+        <div class="devcard__actions">
+          <button class="btn btn--primary" id="btnRemoteConnect" type="button">
+            <span class="i" data-icon="bluetooth" data-size="16"></span><span>连接闪控</span>
+          </button>
+          <button class="btn btn--danger" id="btnRemoteDisconnect" type="button" disabled>断开</button>
+        </div>
+        <p class="hint">
+          连接闪控后，用 <b>▲ / ▼</b> 按键调整助力百分比（每次 ±步进值）。
+          闪控与控制器可同时连接。
+        </p>
+      </div>
+    </div>
+
     <div class="section" id="debugSection" hidden>
       <h2 class="section__title">调试</h2>
 
@@ -307,7 +327,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v1.6.0 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v1.7.0 · LVBU 码表</p>
     </div>
   </section>
 
@@ -331,16 +351,17 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="buildinfo" id="buildInfo">v1.6.0 · 2026-11-12 09:20</div>
+<div class="buildinfo" id="buildInfo">v1.7.0 · 2026-11-12 15:30</div>
 
-<script src="js/util.js?v=22"></script>
-<script src="js/protocol.js?v=22"></script>
-<script src="js/config.js?v=22"></script>
-<script src="js/adapter.js?v=22"></script>
-<script src="js/ble.js?v=22"></script>
-<script src="js/app.js?v=22"></script>
-<script src="js/icons.js?v=22"></script>
-<script src="js/sim.js?v=22"></script>
-<script src="js/ui.js?v=22"></script>
+<script src="js/util.js?v=23"></script>
+<script src="js/protocol.js?v=23"></script>
+<script src="js/config.js?v=23"></script>
+<script src="js/adapter.js?v=23"></script>
+<script src="js/ble.js?v=23"></script>
+<script src="js/remote.js?v=23"></script>
+<script src="js/app.js?v=23"></script>
+<script src="js/icons.js?v=23"></script>
+<script src="js/sim.js?v=23"></script>
+<script src="js/ui.js?v=23"></script>
 </body>
 </html>
