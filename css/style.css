@@ -218,11 +218,19 @@ button { cursor: pointer; border: 0; background: none; }
 
 .panel__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-.panel__title { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
-.panel__title b { font-size: 19px; font-weight: 600; }
+.panel__title { display: inline-flex; align-items: center; gap: 7px; flex: none; white-space: nowrap; }
+.panel__title b { font-size: 19px; font-weight: 600; white-space: nowrap; }
 .panel__title em { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
-.panel__right { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+/* 第二行：助力范围提示 + 闪控状态 */
+.panel__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.panel__hint { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
 /* 闪控连接状态标签 */
 .remote-chip {
@@ -272,7 +280,7 @@ button { cursor: pointer; border: 0; background: none; }
 .chip--confirm.is-done { background: rgba(61, 220, 112, 0.15); color: var(--green); }
 
 .panel__note {
-  margin: 12px 0 12px;
+  margin: 8px 0 12px;
   font-size: 13px;
   line-height: 1.35;
   color: var(--amber);
@@ -761,16 +769,13 @@ button { cursor: pointer; border: 0; background: none; }
 .toast[data-level="success"] { border-color: rgba(61, 220, 112, 0.5); color: #d9ffe6; }
 
 /* ============================ 构建信息 ============================ */
+/* 版本号：内联在内容末尾，不遮挡任何卡片 */
 .buildinfo {
-  position: fixed;
-  right: 0;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 2px);
-  z-index: 35;
-  padding: 2px 8px;
+  margin: 14px 0 6px;
+  padding: 0 2px;
   font-size: 10px;
-  color: #3d4456;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 4px 0 0 4px;
+  color: #394054;
+  text-align: center;
   pointer-events: none;
   user-select: none;
 }

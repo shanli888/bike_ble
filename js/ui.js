@@ -382,10 +382,9 @@
     const statsRow = $('#statsRow');
     const panel = $('#assistPanel');
     const cards = $('.cards');
-    const disclaimer = $('.disclaimer');
 
     if (guide) guide.hidden = showFull;
-    [speedBlock, statsRow, panel, cards, disclaimer].forEach((el) => {
+    [speedBlock, statsRow, panel, cards].forEach((el) => {
       if (el) el.hidden = !showFull;
     });
   }
