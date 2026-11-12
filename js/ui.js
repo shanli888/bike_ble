@@ -77,7 +77,7 @@
     els.panel = $('#assistPanel');
     
     els.note = $('#assistNote');
-    els.confirmChip = $('#confirmChip');
+    
     els.modeRow = $('#modeRow');
     els.slider = $('#assistSlider');
     els.assistValue = $('#assistValue');
@@ -142,30 +142,38 @@
       else app.go('device');
     });
 
-    // 助力：模式按钮只改草稿
-    els.modeRow.addEventListener('click', (e) => {
+    // 助力：点击模式按钮立即下发
+    els.modeRow.addEventListener('click', async (e) => {
       const btn = e.target.closest('.mode');
       if (!btn) return;
+      if (!requireConnected()) {
+        toast('请先连接设备', 'error');
+        return;
+      }
       const key = btn.dataset.mode;
+      // 切换模式需停车（改助力行为，安全考虑）
+      if (key !== app.state.draft.mode && !app.parkedNow()) {
+        toast(`切换模式需停车：当前 ${util.fixed(app.state.bike.speed, 1)} km/h`, 'error');
+        return;
+      }
       const def = config.RIDE_MODES.find((m) => m.key === key);
       const draft = { mode: key };
       if (def && def.assist != null) draft.value = def.assist;
       app.setDraft(draft);
+      await app.applyAssistMode();
     });
 
-    // 档位按钮（非手动模式）
-    $('#levelRow').addEventListener('click', (e) => {
+    // 档位按钮（非手动模式）立即下发
+    $('#levelRow').addEventListener('click', async (e) => {
       const btn = e.target.closest('.level-btn');
       if (!btn) return;
-      const level = Number(btn.dataset.level);
       if (!requireParked('选择档位')) return;
-      app.setDraft({ value: level });
+      app.setDraft({ value: Number(btn.dataset.level) });
+      await app.applyAssistMode();
     });
 
     els.btnMinus.addEventListener('click', () => nudge(-1));
     els.btnPlus.addEventListener('click', () => nudge(+1));
-
-    els.confirmChip.addEventListener('click', onConfirmChip);
 
     // 设备页
     const doScan = async () => {
@@ -297,13 +305,14 @@
     toast('（演示）参数已应用', 'success');
   }
 
-  function nudge(dir) {
+  async function nudge(dir) {
     const step = app.state.prefs.sliderStep || 5;
     const cur = app.state.draft.value || 0;
     const next = util.clamp(cur + dir * step, 0, PCT_MAX);
     if (next === cur) return;
     if (!requireConnected()) return;
-    app.setDraft({ value: next });
+    app.setDraft({ value: next, mode: 'manual' });
+    await app.applyAssist(); // 立即下发
   }
 
   function wireSlider() {
@@ -315,7 +324,7 @@
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
     });
-    els.slider.addEventListener('change', () => {
+    els.slider.addEventListener('change', async () => {
       const v = Math.min(PCT_MAX, Number(els.slider.value));
       els.slider.dataset.touched = '0';
       if (v === startValue) return;
@@ -324,39 +333,14 @@
         els.assistValue.textContent = startValue;
         return;
       }
-      app.setDraft({ value: v });
+      app.setDraft({ value: v, mode: 'manual' });
+      await app.applyAssist(); // 松手立即下发
     });
     applySliderStep();
   }
 
   function applySliderStep() {
     els.slider.step = String(app.state.prefs.sliderStep || 5);
-  }
-
-  async function onConfirmChip() {
-    const d = app.state.draft;
-    const c = app.state.confirmed;
-    const sim = root.LVBU.sim;
-    // 仅调整手动百分比（模式未变）时，随时可下发，不要求停车
-    const onlyPercent = d.mode === 'manual' && c.mode === 'manual';
-    if (app.state.conn.status === 'ready') {
-      if (d.mode === c.mode && d.value === c.value) {
-        toast('参数未修改，无需确认');
-        return;
-      }
-      if (onlyPercent) {
-        await app.applyAssist();
-      } else {
-        await app.confirmParked();
-      }
-      return;
-    }
-    if (sim && sim.running) {
-      if (!onlyPercent && !requireParked('演示确认')) return;
-      simConfirm();
-      return;
-    }
-    toast('请先连接设备', 'error');
   }
 
   /* ======================= 渲染 ======================= */
@@ -550,20 +534,6 @@
     }
 
     renderRemoteChip();
-
-    // 确认胶囊
-    const modeName = app.modeLabel(confirmed.mode);
-    els.confirmChip.classList.remove('is-ready', 'is-done');
-    if (draft.dirty) {
-      const canSend = isManual || parked; // 手动百分比随时可发
-      els.confirmChip.textContent = canSend ? '确认下发' : '待停车确认';
-      els.confirmChip.classList.toggle('is-ready', canSend);
-    } else if (ready) {
-      els.confirmChip.textContent = `${modeName} · 已确认`;
-      els.confirmChip.classList.add('is-done');
-    } else {
-      els.confirmChip.textContent = '未连接';
-    }
 
     els.note.classList.toggle('is-warn', draft.dirty && !isManual && !parked);
   }

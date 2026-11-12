@@ -359,6 +359,38 @@
     }
   }
 
+  /** 立即下发当前草稿（模式 + 助力值），无需确认按钮 */
+  async function applyAssistMode() {
+    if (!state.transport || state.transport.state.status !== 'ready') {
+      toast('请先连接设备', 'error');
+      return false;
+    }
+    const target = {
+      mode: state.draft.mode,
+      value: Math.min(99, Math.max(0, Math.round(state.draft.value || 0))),
+    };
+    try {
+      // 模式变化时先发模式命令
+      if (target.mode !== state.confirmed.mode) {
+        await send({ kind: 'mode', mode: target.mode });
+      }
+      // 手动模式用百分比，其它模式用档位
+      if (target.mode === 'manual') {
+        await send({ kind: 'percent', percent: target.value });
+      } else {
+        await send({ kind: 'level', level: target.value });
+      }
+      state.confirmed = { ...target };
+      state.mode = target.mode;
+      state.draft.dirty = false;
+      toast(`已下发：${modeLabel(target.mode)} ${target.value}%`, 'success');
+      changed();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /** 仅下发手动助力百分比（随时可用，不要求停车），范围 0~99 */
   async function applyAssist() {
     if (!state.transport || state.transport.state.status !== 'ready') {
@@ -639,6 +671,7 @@
     setDraft,
     confirmParked,
     applyAssist,
+    applyAssistMode,
     stopAssist,
     parkedNow,
     setWheel,

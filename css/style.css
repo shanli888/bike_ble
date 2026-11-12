@@ -235,19 +235,7 @@ button { cursor: pointer; border: 0; background: none; }
 .remote-chip.is-ready { color: var(--green); }      /* 已连接：绿 */
 .remote-chip.is-busy { color: var(--amber); }
 
-.chip {
-  flex: none;
-  min-height: 38px;
-  padding: 0 15px;
-  border-radius: 10px;
-  font-size: 15px;
-  color: #cfd4e0;
-  background: rgba(255, 255, 255, 0.09);
-  transition: background 0.15s, color 0.15s, transform 0.1s;
-}
-.chip:active { transform: scale(0.97); }
-.chip--confirm.is-ready { background: var(--amber-hi); color: #1c1503; font-weight: 700; }
-.chip--confirm.is-done { background: rgba(61, 220, 112, 0.15); color: var(--green); }
+
 
 .panel__note {
   margin: 8px 0 12px;
