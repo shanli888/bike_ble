@@ -178,7 +178,10 @@
         log(`按键: ${name}`);
         emit('key', { key, name });
       } else {
+        // 未识别的按键码：完整帧 + 码值都发出去，便于实测确认
+        log(`未知按键码 ${key}，完整帧 ${frame}`);
         emit('other', frame);
+        emit('unknownKey', { key, frame });
       }
     }
 

@@ -427,7 +427,11 @@
     });
     rm.on('log', (text) => log('info', '[闪控] ' + text));
     rm.on('raw', (hex) => log('rx', '[闪控] ' + hex));
-    rm.on('key', ({ name }) => onRemoteKey(name));
+    rm.on('key', ({ key, name }) => {
+      log('info', `[闪控] 识别按键: ${name} (码 ${key})`);
+      onRemoteKey(name);
+    });
+    rm.on('other', (hex) => log('info', '[闪控] 未知帧: ' + hex));
     changed();
   }
 
