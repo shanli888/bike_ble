@@ -222,6 +222,41 @@ button { cursor: pointer; border: 0; background: none; }
 .panel__title b { font-size: 19px; font-weight: 600; }
 .panel__title em { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
+.panel__right { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+
+/* 闪控连接状态标签 */
+.remote-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  height: 26px;
+  border-radius: 13px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.remote-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #5b6276;
+  flex: none;
+}
+.remote-chip.is-ready {
+  color: var(--green);
+  background: rgba(61, 220, 112, 0.12);
+  border-color: rgba(61, 220, 112, 0.35);
+}
+.remote-chip.is-ready .remote-chip__dot {
+  background: var(--green);
+  box-shadow: 0 0 6px 1px rgba(61, 220, 112, 0.5);
+}
+.remote-chip.is-busy { color: var(--amber); border-color: rgba(251, 176, 39, 0.35); }
+.remote-chip.is-busy .remote-chip__dot { background: var(--amber); }
+
 .chip {
   flex: none;
   min-height: 38px;

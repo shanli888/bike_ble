@@ -85,6 +85,8 @@
     els.btnPlus = $('#btnPlus');
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
+    els.remoteChip = $('#remoteChip');
+    els.remoteChipText = $('#remoteChipText');
     els.remoteName = $('#remoteName');
     els.remoteStatus = $('#remoteStatus');
     els.btnRemoteConnect = $('#btnRemoteConnect');
@@ -550,6 +552,8 @@
       }
     }
 
+    renderRemoteChip();
+
     // 确认胶囊
     const modeName = app.modeLabel(confirmed.mode);
     els.confirmChip.classList.remove('is-ready', 'is-done');
@@ -665,6 +669,23 @@
     els.btnDisconnect.disabled = conn.status !== 'ready' && conn.status !== 'disconnected';
     els.btnReconnect.disabled = !conn.device || conn.status === 'connecting' || conn.status === 'discovering' || conn.status === 'ready';
     renderRemote();
+  }
+
+  /** 首页助力面板里的闪控状态标签 */
+  function renderRemoteChip() {
+    if (!els.remoteChip) return;
+    const r = (app.state.remote) || { status: 'idle' };
+    const map = {
+      idle: ['闪控未连接', ''],
+      requesting: ['选择中…', 'is-busy'],
+      connecting: ['连接中…', 'is-busy'],
+      ready: ['闪控已连接', 'is-ready'],
+      disconnected: ['闪控已断开', ''],
+      error: ['闪控错误', ''],
+    };
+    const [txt, cls] = map[r.status] || map.idle;
+    els.remoteChip.className = 'remote-chip ' + cls;
+    els.remoteChipText.textContent = txt;
   }
 
   /** 渲染 BR80 闪控状态 */
