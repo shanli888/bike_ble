@@ -530,6 +530,31 @@
     els.note.classList.toggle('is-warn', draft.dirty && !isManual && !parked);
   }
 
+  /* ---------------- 陀螺仪滑动中位数滤波 ---------------- */
+  const GYRO_WINDOW = 5;        // 保留最近 5 次读数
+  const GYRO_MAX_DELTA = 15;    // 与中位数偏差超过 15° 视为尖峰，直接丢弃
+  const gyroBuf = [];
+
+  function pushGyroSample(v) {
+    if (!isFinite(v)) return;
+    // 先与当前中位数比较，偏差过大则不入缓冲（避免尖峰污染）
+    const cur = median(gyroBuf);
+    if (cur != null && Math.abs(v - cur) > GYRO_MAX_DELTA) return;
+    gyroBuf.push(v);
+    if (gyroBuf.length > GYRO_WINDOW) gyroBuf.shift();
+  }
+
+  function median(arr) {
+    if (!arr.length) return null;
+    const s = arr.slice().sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+
+  function getFilteredGyro() {
+    return median(gyroBuf);
+  }
+
   /** 渲染 10 格进度条 */
   function renderBars(field, ratio, level) {
     const grid = $(`[data-field="${field}"]`);
@@ -543,13 +568,14 @@
   function renderCards() {
     const b = app.state.bike;
 
-    // ===== 陀螺仪角度 =====
-    // 直接显示设备返回的陀螺仪角度（°），不做坡度换算
-    // 骑行时颠簸会造成瞬时尖峰，超过 ±90° 的读数视为异常（设备姿态范围外）
-    let angle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
-    if (angle != null && Math.abs(angle) > 90) angle = null; // 丢弃异常尖峰
+    // ===== 陀螺仪角度（带中位数滤波）=====
+    // 设备返回的 BD 值在颠簸瞬间会剧烈跳变（实测平路 raw≈52，颠簸 raw≈1119），
+    // 属于传感器受冲击的瞬时尖峰。这里用滑动中位数滤波，得到稳定的车身倾角。
+    const rawAngle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
+    if (rawAngle != null) pushGyroSample(rawAngle);
+    const angle = getFilteredGyro();
     setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
-    // 原始值（十进制，未除以 10）用于核对缩放系数
+    // 原始值（十进制，未除以 10）用于核对
     const rawEl = $('[data-field="gyroRaw"]');
     if (rawEl) rawEl.textContent = b.gyroRaw != null ? `raw ${parseInt(b.gyroRaw, 10)}` : '';
     // 进度条：角度绝对值 0~90° 映射到 10 格
