@@ -431,16 +431,84 @@
     changed();
   }
 
-  /** 闪控按键 → 调整助力百分比 */
+  /* 闪控按键状态 */
+  const remoteCtlState = {
+    frozenUntil: 0,     // 冻结截止时间戳（ms），期间忽略按键
+    stopped: false,     // 是否处于「停止助力」状态
+    savedPower: null,   // 停止前记录的助力百分比，用于恢复
+  };
+  const REMOTE_FREEZE_MS = 5000; // 按键后冻结 5 秒
+
+  function remoteFrozen() {
+    return Date.now() < remoteCtlState.frozenUntil;
+  }
+
+  /** 闪控按键 → 调整助力 / 停止 / 恢复 */
   async function onRemoteKey(name) {
-    if (name !== 'up' && name !== 'down') {
-      // 左右/主键暂不绑定功能
-      return;
-    }
     if (state.conn.status !== 'ready') {
       toast('请先连接助力控制器', 'error');
       return;
     }
+
+    // 冻结期内忽略（防止误触连发）
+    if (remoteFrozen()) {
+      const left = Math.ceil((remoteCtlState.frozenUntil - Date.now()) / 1000);
+      toast(`操作已冻结，请 ${left} 秒后再按`);
+      return;
+    }
+
+    // ---- 停止键：停止助力 ----
+    if (name === 'home') {
+      const cur = state.draft.value || 0;
+      if (cur <= 0 && remoteCtlState.stopped) {
+        return; // 已经是停止状态
+      }
+      // 记录当前助力值用于恢复
+      remoteCtlState.savedPower = cur;
+      remoteCtlState.stopped = true;
+      state.draft.value = 0;
+      state.draft.mode = 'manual';
+      state.draft.dirty = true;
+      changed();
+      const ok = await applyAssist();
+      if (ok) {
+        remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
+        toast(`已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
+      }
+      return;
+    }
+
+    // ---- 上/下键 ----
+    if (name !== 'up' && name !== 'down') return;
+
+    // 停止状态下按上下键：恢复原有助力
+    if (remoteCtlState.stopped) {
+      const saved = remoteCtlState.savedPower;
+      remoteCtlState.stopped = false;
+      remoteCtlState.savedPower = null;
+      if (saved != null && saved > 0) {
+        state.draft.value = saved;
+        state.draft.mode = 'manual';
+        state.draft.dirty = true;
+        changed();
+        const ok = await applyAssist();
+        if (ok) {
+          remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
+          toast(`已恢复助力 ${saved}%`, 'success');
+        }
+      } else {
+        // 没有记录值，按正常步进处理
+        const step = state.prefs.sliderStep || 5;
+        const next = name === 'up' ? step : 0;
+        state.draft.value = next;
+        changed();
+        const ok = await applyAssist();
+        if (ok) remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
+      }
+      return;
+    }
+
+    // ---- 正常调整 ----
     const step = state.prefs.sliderStep || 5;
     const cur = state.draft.value || 0;
     const next = Math.max(0, Math.min(99, cur + (name === 'up' ? step : -step)));
@@ -452,7 +520,11 @@
     state.draft.mode = 'manual';
     state.draft.dirty = true;
     changed();
-    await applyAssist();
+    const ok = await applyAssist();
+    if (ok) {
+      remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
+      toast(`助力 ${next}%（${Math.ceil(REMOTE_FREEZE_MS / 1000)} 秒内不再响应）`, 'success');
+    }
   }
 
   async function connectRemote() {
@@ -577,6 +649,14 @@
     attachRemote,
     connectRemote,
     disconnectRemote,
+    /** 闪控状态（供 UI 显示冻结/停止） */
+    getRemoteState() {
+      return {
+        frozenMs: Math.max(0, remoteCtlState.frozenUntil - Date.now()),
+        stopped: remoteCtlState.stopped,
+        savedPower: remoteCtlState.savedPower,
+      };
+    },
     displaySpeed,
     speedLabel,
     modeLabel,

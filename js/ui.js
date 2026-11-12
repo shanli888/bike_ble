@@ -248,6 +248,10 @@
 
   function bindAppEvents() {
     app.on('change', onAppChange);
+    // 闪控冻结倒计时需要持续刷新
+    app.on('tick', () => {
+      if (app.getRemoteState && app.getRemoteState().frozenMs > 0) renderAssist();
+    });
     app.on('toast', (t) => toast(t.text, t.level));
     app.on('log', (entry) => appendLogLine(entry));
     app.on('page', renderPage);
@@ -533,6 +537,17 @@
       els.note.textContent = '已停车 · 可直接调整助力档位';
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
+    }
+
+    // 闪控状态提示（覆盖上面的默认提示）
+    if (ready && app.getRemoteState) {
+      const rs = app.getRemoteState();
+      if (rs.stopped) {
+        els.note.textContent = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
+        els.panel.classList.add('is-parked-ready');
+      } else if (rs.frozenMs > 0) {
+        els.note.textContent = `闪控操作冻结中 · ${Math.ceil(rs.frozenMs / 1000)} 秒后可再按`;
+      }
     }
 
     // 确认胶囊
