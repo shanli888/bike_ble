@@ -145,7 +145,7 @@
       </article>
     </section>
 
-    <div class="buildinfo" id="buildInfo">v2.0.1 · 2026-11-13 10:45</div>
+    <div class="buildinfo" id="buildInfo">v2.0.2 · 2026-11-13 14:20</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -159,10 +159,10 @@
           <span class="pill" id="devStatus">未连接</span>
         </div>
         <dl class="kv">
-          <div><dt>设备 ID</dt><dd id="devId">--</dd></div>
+          <div hidden><dt>设备 ID</dt><dd id="devId">--</dd></div>
           <div><dt>信号</dt><dd id="devRssi">--</dd></div>
-          <div><dt>写入特征</dt><dd id="devWrite">--</dd></div>
-          <div><dt>通知特征</dt><dd id="devNotify">--</dd></div>
+          <div hidden><dt>写入特征</dt><dd id="devWrite">--</dd></div>
+          <div hidden><dt>通知特征</dt><dd id="devNotify">--</dd></div>
         </dl>
         <div class="devcard__actions">
           <button class="btn btn--primary" id="btnScan" type="button">
@@ -202,7 +202,7 @@
       </div>
     </div>
 
-    <div class="section" id="debugSection">
+    <div class="section" id="debugSection" hidden>
       <h2 class="section__title">调试</h2>
 
       <h3 class="section__sub">闪控诊断</h3>
@@ -303,7 +303,7 @@
       <p class="hint">校准会改变电机标定，仅在停车时操作。重启会短暂断开连接。</p>
     </div>
 
-    <div class="section">
+    <div class="section" id="paramSection" hidden>
       <h2 class="section__title">设备参数</h2>
       <div class="row row--stack">
         <label class="row__label" for="setImei">电机 IMEI</label>
@@ -312,7 +312,7 @@
       <p class="hint">电机 IMEI 用于构造命令帧，必须与控制器匹配。轮径固定 26 寸。</p>
     </div>
 
-    <div class="section">
+    <div class="section" id="gattSection" hidden>
       <h2 class="section__title">GATT 目标</h2>
       <div class="row row--stack">
         <label class="row__label" for="setService">服务 UUID</label>
@@ -344,9 +344,9 @@
       </div>
       <div class="actions">
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
-        <button class="btn btn--ghost" id="btnExportLogs" type="button">导出日志</button>
+        <button class="btn btn--ghost" id="btnExportLogs" type="button" hidden>导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v2.0.1 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v2.0.2 · LVBU 码表</p>
     </div>
   </section>
 
@@ -370,15 +370,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=43"></script>
-<script src="js/protocol.js?v=43"></script>
-<script src="js/config.js?v=43"></script>
-<script src="js/adapter.js?v=43"></script>
-<script src="js/ble.js?v=43"></script>
-<script src="js/remote.js?v=43"></script>
-<script src="js/app.js?v=43"></script>
-<script src="js/icons.js?v=43"></script>
-<script src="js/sim.js?v=43"></script>
-<script src="js/ui.js?v=43"></script>
+<script src="js/util.js?v=44"></script>
+<script src="js/protocol.js?v=44"></script>
+<script src="js/config.js?v=44"></script>
+<script src="js/adapter.js?v=44"></script>
+<script src="js/ble.js?v=44"></script>
+<script src="js/remote.js?v=44"></script>
+<script src="js/app.js?v=44"></script>
+<script src="js/icons.js?v=44"></script>
+<script src="js/sim.js?v=44"></script>
+<script src="js/ui.js?v=44"></script>
 </body>
 </html>
