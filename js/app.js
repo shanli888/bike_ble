@@ -572,6 +572,14 @@
     if (remoteCtl) remoteCtl.disconnect();
   }
 
+  /** 诊断：闪控探测帧 / 重新订阅 */
+  async function remotePing() {
+    if (remoteCtl && remoteCtl.ping) await remoteCtl.ping();
+  }
+  async function remoteResubscribe() {
+    if (remoteCtl && remoteCtl.resubscribe) await remoteCtl.resubscribe();
+  }
+
   /** 收到一次速度采样（来自设备 BF 回复） */
   function markSpeedSample(speed) {
     const b = state.bike;
@@ -686,6 +694,8 @@
     attachRemote,
     connectRemote,
     disconnectRemote,
+    remotePing,
+    remoteResubscribe,
     /** 闪控状态（供 UI 显示冻结/停止） */
     getRemoteState() {
       return {

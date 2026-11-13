@@ -43,6 +43,7 @@
     const listeners = {};
     let device = null;
     let notifyCh = null;
+    let writeCh = null;
     let buf = ''; // 分片拼接缓冲
 
     function on(evt, fn) {
@@ -112,59 +113,111 @@
       setStatus('connecting');
       const server = await device.gatt.connect();
 
-      // 先枚举服务与特征，便于诊断
+      // 枚举服务与特征（诊断用，同时找出真实可用的通知特征）
+      const found = { svc: null, noti: null, write: null };
       try {
         const all = await server.getPrimaryServices();
-        const svcList = [];
+        const lines = [];
         for (const s of all) {
           const chars = await s.getCharacteristics().catch(() => []);
-          svcList.push(
-            s.uuid + (chars.length ? ` [${chars.map((c) => c.uuid.slice(4, 8) + ':' + c.properties.write + '/' + c.properties.notify + '/' + c.properties.indicate).join(', ')}]` : '')
-          );
+          const desc = chars.map((c) => {
+            const p = c.properties;
+            const flags = [
+              p.notify ? 'notify' : '',
+              p.indicate ? 'indicate' : '',
+              p.write ? 'write' : '',
+              p.writeWithoutResponse ? 'writeNR' : '',
+              p.read ? 'read' : '',
+            ].filter(Boolean).join('+') || '-';
+            return `${c.uuid.slice(4, 8)}(${flags})`;
+          }).join(' ');
+          lines.push(`${s.uuid.slice(4, 8)}: ${desc || '(无特征)'}`);
+
+          // 记录匹配特征
+          if (s.uuid === UUID.svc) found.svc = s;
+          for (const c of chars) {
+            if (c.uuid === UUID.noti) found.noti = c;
+            if (c.uuid === UUID.write) found.write = c;
+          }
         }
-        log('服务列表: ' + svcList.join(' | '));
+        log('服务清单 → ' + lines.join(' | '));
       } catch (e) {
         log('枚举服务失败: ' + (e.message || e));
       }
 
-      const svc = await server.getPrimaryService(UUID.svc);
-      notifyCh = await svc.getCharacteristic(UUID.noti);
-      log(`已获取通知特征 ${notifyCh.uuid.slice(4, 8)}`);
+      if (!found.svc) throw new Error('未找到服务 A2A0，请确认连接的是 BR80 闪控');
+      notifyCh = found.noti;
+      if (!notifyCh) throw new Error('未找到通知特征 A2A4');
+      writeCh = found.write || null;
+      log(`通知特征 A2A4 ${notifyCh.properties.notify ? '支持 notify' : notifyCh.properties.indicate ? '支持 indicate' : '属性异常'}；写入特征 A2A3 ${writeCh ? '已找到' : '缺失'}`);
 
-      // 打开通知：先尝试 startNotifications，失败则手动写 CCCD
+      // 打开通知
       let subOk = false;
       try {
         await notifyCh.startNotifications();
         subOk = true;
         log('startNotifications 成功');
       } catch (e) {
-        log('startNotifications 失败: ' + (e.message || e) + '，尝试手动写 CCCD');
+        log('startNotifications 失败: ' + (e.message || e));
+      }
+
+      // 兜底：手动写 CCCD（notify=0x0001 / indicate=0x0002）
+      if (!subOk) {
         try {
-          const cccd = await server
-            .getPrimaryService('00002902-0000-1000-8000-00805f9b34fb')
-            .catch(() => null);
-          if (cccd) await cccd.getCharacteristic(notifyCh.uuid).writeValue(new Uint8Array([1, 0]));
-        } catch (e2) {
-          // 走 characteristic 自带的 descriptor 路径
-          try {
-            const descs = await notifyCh.getDescriptors();
-            const c = descs.find((d) => d.uuid.startsWith('00002902'));
-            if (c) {
-              await c.writeValue(new Uint8Array([1, 0]));
-              subOk = true;
-              log('CCCD 写入成功（notify）');
-            }
-          } catch (e3) {
-            log('CCCD 写入也失败: ' + (e3.message || e3));
+          const descs = await notifyCh.getDescriptors();
+          const cccd = descs.find((d) => d.uuid.startsWith('00002902'));
+          if (cccd) {
+            const v = notifyCh.properties.indicate ? [2, 0] : [1, 0];
+            await cccd.writeValue(new Uint8Array(v));
+            subOk = true;
+            log('手动写 CCCD 成功 [' + v.join(',') + ']');
+          } else {
+            log('该特征没有 CCCD 描述符');
           }
+        } catch (e) {
+          log('写 CCCD 失败: ' + (e.message || e));
         }
       }
 
       notifyCh.addEventListener('characteristicvaluechanged', onNotify);
 
+      // 主动读一次（部分设备读后才开始推送）
+      try {
+        const dv = await notifyCh.readValue();
+        const hex = Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength))
+          .map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+        log('主动读取 A2A4: ' + hex);
+      } catch (e) {
+        log('主动读取失败（一般正常）: ' + (e.message || e));
+      }
+
+      // 向 A2A3 写握手/激活帧，促使设备开始上报按键
+      if (writeCh) {
+        const tries = [
+          '55AA0AA2A0000102',
+          '55AA0AA2A00001',
+          '55AA0AA2A0',
+        ];
+        for (const t of tries) {
+          try {
+            await writeCh.writeValue(hexToBytes(t));
+            log('已向 A2A3 写入: ' + t);
+            break;
+          } catch (e) {
+            log('写 A2A3 失败(' + t + '): ' + (e.message || e));
+          }
+        }
+      }
+
       setStatus('ready');
-      log(subOk ? '闪控已连接，等待按键…' : '闪控已连接但通知可能未开启，请按一下按键看日志');
+      log(subOk ? '闪控已连接，等待按键…' : '通知未成功开启，按键可能无法接收');
       return state.device;
+    }
+
+    function hexToBytes(hex) {
+      const out = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+      return out;
     }
 
     function onNotify(evt) {
@@ -237,13 +290,70 @@
       }
       if (device && device.gatt && device.gatt.connected) device.gatt.disconnect();
       notifyCh = null;
+      writeCh = null;
       buf = '';
       state.device = null;
       setStatus('disconnected');
       log('闪控已断开');
     }
 
-    return { state, on, connect, disconnect, supported, UUID, KEY_DOWN };
+    /** 诊断：向 A2A3 依次写几种候选帧，观察是否触发通知 */
+    async function ping() {
+      if (!writeCh) {
+        log('A2A3 写入特征不可用');
+        return;
+      }
+      const candidates = [
+        '55AA0AA2A0000102',
+        '55AA0AA2A00001',
+        '55AA0AA2A0',
+        '55AA0AA2A0000107',
+        '55AA0AA2A0000108',
+      ];
+      for (const hex of candidates) {
+        try {
+          await writeCh.writeValue(hexToBytes(hex));
+          log('↑ A2A3 写入 ' + hex);
+        } catch (e) {
+          log('写 A2A3 失败 ' + hex + ': ' + (e.message || e));
+        }
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      log('探测完成，看上面是否出现「收到通知」');
+    }
+
+    /** 诊断：重新订阅通知 */
+    async function resubscribe() {
+      if (!notifyCh) {
+        log('通知特征不存在');
+        return;
+      }
+      try {
+        notifyCh.removeEventListener('characteristicvaluechanged', onNotify);
+      } catch (_) {}
+      try {
+        await notifyCh.stopNotifications();
+        log('已停止旧订阅');
+      } catch (_) {}
+      buf = '';
+      try {
+        await notifyCh.startNotifications();
+        log('重新订阅成功');
+      } catch (e) {
+        log('重新订阅失败: ' + (e.message || e));
+      }
+      notifyCh.addEventListener('characteristicvaluechanged', onNotify);
+      // 再主动读一次
+      try {
+        const dv = await notifyCh.readValue();
+        const hex = Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength))
+          .map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+        log('重新读完 A2A4: ' + hex);
+      } catch (_) {}
+      log('重新订阅完成，请按一下闪控按键');
+    }
+
+    return { state, on, connect, disconnect, ping, resubscribe, supported, UUID, KEY_DOWN, hexToBytes };
   }
 
   root.LVBU = root.LVBU || {};

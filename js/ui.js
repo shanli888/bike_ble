@@ -197,6 +197,8 @@
       }
     });
     $('#btnRemoteDisconnect').addEventListener('click', () => app.disconnectRemote());
+    $('#btnRemotePing').addEventListener('click', () => app.remotePing());
+    $('#btnRemoteResub').addEventListener('click', () => app.remoteResubscribe());
     $('#btnClearLog').addEventListener('click', () => {
       app.clearLogs();
       renderLog(true);
@@ -662,6 +664,10 @@
     const busy = r.status === 'requesting' || r.status === 'connecting';
     els.btnRemoteConnect.disabled = busy || r.status === 'ready';
     els.btnRemoteDisconnect.disabled = r.status !== 'ready';
+    const pingBtn = $('#btnRemotePing');
+    const resubBtn = $('#btnRemoteResub');
+    if (pingBtn) pingBtn.disabled = r.status !== 'ready';
+    if (resubBtn) resubBtn.disabled = r.status !== 'ready';
   }
 
   /* ======================= 日志 ======================= */
