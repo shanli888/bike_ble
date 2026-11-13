@@ -416,6 +416,60 @@
       log('强制重订完成，按一下闪控按键试试');
     }
 
+    /** 诊断：深入检查 A2A4 的 descriptor 与订阅状态 */
+    async function inspectA2A4() {
+      if (!device || !device.gatt || !device.gatt.connected) {
+        log('设备未连接');
+        return;
+      }
+      try {
+        const server = await device.gatt.connect();
+        const svc = await server.getPrimaryService(UUID.svc);
+        const ch = await svc.getCharacteristic(UUID.noti);
+        const p = ch.properties || {};
+        log(`A2A4 属性: notify=${p.notify} indicate=${p.indicate} write=${p.write} writeNR=${p.writeWithoutResponse} read=${p.read}`);
+        const descs = await ch.getDescriptors().catch(() => []);
+        if (!descs.length) {
+          log('A2A4 没有 descriptor（CCCD 缺失 → 无法订阅！）');
+        } else {
+          for (const d of descs) {
+            let val = '?';
+            if (d.uuid.startsWith('00002902')) {
+              try {
+                const dv = await d.readValue();
+                val = Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength))
+                  .map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+              } catch (e) {
+                val = '(读失败)';
+              }
+            }
+            log(`  descriptor ${d.uuid.slice(4, 8)} = ${val}`);
+          }
+        }
+        // 尝试 indicate 模式订阅
+        try {
+          await ch.startNotifications();
+          log('A2A4 startNotifications 成功');
+        } catch (e) {
+          log('A2A4 startNotifications 失败: ' + (e.name || e.message));
+        }
+        // 验证 CCCD 当前值
+        try {
+          const descs2 = await ch.getDescriptors();
+          const cccd = descs2.find((d) => d.uuid.startsWith('00002902'));
+          if (cccd) {
+            const dv = await cccd.readValue();
+            const v = Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength))
+              .map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+            log(`订阅后 CCCD 值 = ${v} （01 00=notify, 02 00=indicate, 00 00=关闭）`);
+          }
+        } catch (_) {}
+        log('A2A4 检查完成');
+      } catch (e) {
+        log('检查 A2A4 失败: ' + (e.message || e));
+      }
+    }
+
     /** 诊断：把设备所有特征读一遍，打印值与属性 */
     async function dumpAll() {
       if (!device || !device.gatt || !device.gatt.connected) {
@@ -520,7 +574,7 @@
       log('重新订阅完成，请按一下闪控按键');
     }
 
-    return { state, on, connect, disconnect, ping, resubscribe, dumpAll, sendRaw, forceNotify, supported, UUID, KEY_DOWN, hexToBytes };
+    return { state, on, connect, disconnect, ping, resubscribe, dumpAll, sendRaw, forceNotify, inspectA2A4, supported, UUID, KEY_DOWN, hexToBytes };
   }
 
   root.LVBU = root.LVBU || {};

@@ -201,6 +201,7 @@
     $('#btnRemoteResub').addEventListener('click', () => app.remoteResubscribe());
     $('#btnRemoteDump').addEventListener('click', () => app.remoteDump());
     $('#btnRemoteForce').addEventListener('click', () => app.remoteForceNotify());
+    $('#btnRemoteInspect').addEventListener('click', () => app.remoteInspect());
     $('#btnRemoteSendRaw').addEventListener('click', () => {
       const inp = $('#remoteRawInput');
       if (inp) app.remoteSendRaw(inp.value);
@@ -683,11 +684,13 @@
     const dumpBtn = $('#btnRemoteDump');
     const forceBtn = $('#btnRemoteForce');
     const rawBtn = $('#btnRemoteSendRaw');
+    const inspBtn = $('#btnRemoteInspect');
     if (pingBtn) pingBtn.disabled = r.status !== 'ready';
     if (resubBtn) resubBtn.disabled = r.status !== 'ready';
     if (dumpBtn) dumpBtn.disabled = r.status !== 'ready';
     if (forceBtn) forceBtn.disabled = r.status !== 'ready';
     if (rawBtn) rawBtn.disabled = r.status !== 'ready';
+    if (inspBtn) inspBtn.disabled = r.status !== 'ready';
   }
 
   /* ======================= 日志 ======================= */

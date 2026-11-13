@@ -592,6 +592,9 @@
   async function remoteForceNotify() {
     if (remoteCtl && remoteCtl.forceNotify) await remoteCtl.forceNotify();
   }
+  async function remoteInspect() {
+    if (remoteCtl && remoteCtl.inspectA2A4) await remoteCtl.inspectA2A4();
+  }
 
   /** 收到一次速度采样（来自设备 BF 回复） */
   function markSpeedSample(speed) {
@@ -712,6 +715,7 @@
     remoteDump,
     remoteSendRaw,
     remoteForceNotify,
+    remoteInspect,
     /** 闪控状态（供 UI 显示冻结/停止） */
     getRemoteState() {
       return {
