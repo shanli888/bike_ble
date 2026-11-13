@@ -1,19 +1,24 @@
 /* =========================================================================
- * remote.js — BR80 闪控（LIVALL）蓝牙遥控器
+ * remote.js — BR80 / BlingRemote 闪控（LIVALL）蓝牙遥控器
  *
- * 协议（见 BR80闪控_蓝牙协议逆向.md）：
+ * 协议（见 BR80闪控_蓝牙协议逆向.md §4、§6.2）：
  *   服务  0000A2A0-0000-1000-8000-00805F9B34FB
  *   通知  0000A2A4（收按键事件）
- *   写入  0000A2A3（发命令）
+ *   写入  0000A2A3（发 26 字节帧激活/握手）
  *
- * 按键帧: 55AA 0A A2 A0 00 01 <key> 02
- *   上键按下  ...0107    上键抬起  ...0108
- *   下键按下  ...0122    下键抬起  ...011D
- *   右键按下  ...0105    右键抬起  ...0109
- *   左键按下  ...010B    左键抬起  ...010B
- *   主键按下  ...0106    主键抬起  ...0102
+ * 按键帧 8 字节 = 16 个十六进制字符，无帧尾、无校验：
+ *     55 AA 0A A2 A0 00 01 <key>
  *
- * 只使用「按下沿」触发，避免一次按键产生两次动作。
+ *   按下 / 抬起（抬起 = 按下码 + 0x20）：
+ *     ▲ 上    0107 / 0127
+ *     ▼ 下    0108 / 0128
+ *     ◀ 左    0102 / 0122
+ *     ▶ 右    0105 / 0125
+ *     ● 主键  0106 / 0126
+ *     📷 相机 0109 / 0129
+ *     🎤 通话 010B / 012B
+ *
+ * 下发帧（26 字节）：55 AA C0 14 01 <payload 20B> 19
  * ========================================================================= */
 (function (root) {
   'use strict';
@@ -24,15 +29,35 @@
     write: '0000a2a3-0000-1000-8000-00805f9b34fb',
   };
 
-  /** 按键码 → 语义（仅按下沿） */
+  const FRAME_PREFIX = '55AA0AA2A00001'; // 16 字符帧的前 14 位
+
+  /** 按下码 → 语义 */
   const KEY_DOWN = {
     '07': 'up',
-    '22': 'down',
+    '08': 'down',
+    '02': 'left',
     '05': 'right',
-    '0B': 'left',
     '06': 'home',
+    '09': 'camera',
+    '0B': 'talk',
   };
-  const KEY_UP_SET = new Set(['08', '1D', '09', '02']);
+  /** 抬起码 = 按下码 + 0x20 */
+  const KEY_UP = {
+    '27': 'up',
+    '28': 'down',
+    '22': 'left',
+    '25': 'right',
+    '26': 'home',
+    '29': 'camera',
+    '2B': 'talk',
+  };
+
+  /** 组装 26 字节下发帧（§3.1）：55 AA C0 14 01 + 20B payload + 19 */
+  function buildDownlink(payloadHex) {
+    let p = (payloadHex || '').toUpperCase().replace(/[^0-9A-F]/g, '');
+    const payload = p.slice(0, 40).padEnd(40, '0'); // 20 字节 = 40 hex
+    return '55AAC01401' + payload + '19';
+  }
 
   function createRemote() {
     const state = {
@@ -89,11 +114,17 @@
         device = await root.navigator.bluetooth.requestDevice({
           filters: [
             { services: [UUID.svc] },
+            { namePrefix: 'BlingRemote' },   // 文档 §6.3 确认的设备名
             { namePrefix: 'BR80' },
             { namePrefix: 'BR' },
             { namePrefix: 'LIVALL' },
           ],
-          optionalServices: [UUID.svc, '0000180a-0000-1000-8000-00805f9b34fb'],
+          optionalServices: [
+            UUID.svc,
+            '0000180a-0000-1000-8000-00805f9b34fb', // 180A 设备信息
+            '0000180f-0000-1000-8000-00805f9b34fb', // 180F 电池
+            '5833ff01-9b8b-5191-6142-22a4536ef123', // 私有透传通道
+          ],
         });
       } catch (err) {
         setStatus('idle');
@@ -225,50 +256,49 @@
 
       let guard = 0;
       while (guard++ < 20) {
-        // 已知按键帧：55AA 0A A2 A0 00 01 <key> 02（9 字节）
-        const keyIdx = b.indexOf('55AA0AA2A00001');
-        if (keyIdx >= 0 && b.length >= keyIdx + 18) {
-          const frame = b.slice(keyIdx, keyIdx + 18);
-          if (frame.endsWith('02')) {
-            b = b.slice(keyIdx + 18);
-            decodeFrame(frame);
-            continue;
-          }
-        }
-        // 非按键帧：整段打印，供分析
-        if (b.length >= 4) {
-          emit('other', { label, hex: b });
-          log(`其它数据 [${label}]: ${b}`);
+        const idx = b.indexOf(FRAME_PREFIX);
+        if (idx < 0) {
+          // 没有帧头：若有残留数据，打印后丢弃
+          if (b.length >= 4) log(`[${label}] 非按键数据: ${b}`);
           b = '';
+          break;
         }
-        break;
+        if (idx > 0) {
+          log(`[${label}] 丢弃帧前杂数据: ${b.slice(0, idx)}`);
+          b = b.slice(idx);
+        }
+        // 按键帧固定 16 个字符
+        if (b.length < 16) break; // 等后续分片
+        const frame = b.slice(0, 16);
+        b = b.slice(16);
+        decodeFrame(frame);
       }
       bufs[label] = b;
     }
 
-    /** 解析按键帧并派发事件 */
+    /** 解析 16 字符按键帧并派发事件 */
     function decodeFrame(frame) {
-      // 55AA0AA2A0000107
-      // 0123456789...
-      if (!frame.startsWith('55AA0AA2A00001')) {
-        emit('other', frame);
+      // 形如 55AA0AA2A0000107（按下）或 55AA0AA2A0000127（抬起）
+      if (!frame.startsWith(FRAME_PREFIX)) {
+        log('非按键帧: ' + frame);
         return;
       }
       const key = frame.substr(14, 2);
-      if (KEY_UP_SET.has(key)) {
-        emit('release', { key });
+      const downName = KEY_DOWN[key];
+      const upName = KEY_UP[key];
+
+      if (downName) {
+        log(`按键按下: ${downName} (码 ${key})`);
+        emit('key', { key, name: downName, edge: 'down', frame });
         return;
       }
-      const name = KEY_DOWN[key];
-      if (name) {
-        log(`按键: ${name}`);
-        emit('key', { key, name });
-      } else {
-        // 未识别的按键码：完整帧 + 码值都发出去，便于实测确认
-        log(`未知按键码 ${key}，完整帧 ${frame}`);
-        emit('other', frame);
-        emit('unknownKey', { key, frame });
+      if (upName) {
+        emit('release', { key, name: upName, edge: 'up', frame });
+        return;
       }
+      // 未识别的按键码：完整帧 + 码值都发出去，便于实测确认
+      log(`未知按键码 ${key}，完整帧 ${frame}`);
+      emit('unknownKey', { key, frame });
     }
 
     function disconnect() {
@@ -295,21 +325,23 @@
         log('写入特征不可用');
         return;
       }
+      // 按文档 §3.1 组装 26 字节帧：55 AA C0 14 01 + 20B payload + 19
+      // payload 用 0A A2 A0 00 01 02（即 UP 键的载荷）
       const candidates = [
-        '55AA0AA2A0000102',
-        '55AA0AA2A00001',
-        '55AA0AA2A0',
-        '55AA0AA2A0000107',
-        '55AA0AA2A0000108',
+        buildDownlink('0AA2A0000102'),
+        buildDownlink('0AA2A0000107'),
+        buildDownlink('0AA2A00C'),      // 闪控发现帧
+        buildDownlink('0AA2A00001'),
+        buildDownlink('1A00'),          // Jet 握手 ACK
       ];
       for (const hex of candidates) {
         try {
           await writeCh.writeValue(hexToBytes(hex));
-          log('↑ 写入 ' + hex);
+          log(`↑ 写入 ${hex.length / 2}B: ${hex}`);
         } catch (e) {
-          log('写入失败 ' + hex + ': ' + (e.message || e));
+          log('写入失败 ' + (e.message || e));
         }
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 500));
       }
       log('探测完成，看上面是否出现 ← 数据');
     }
