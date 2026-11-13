@@ -571,6 +571,15 @@ button { cursor: pointer; border: 0; background: none; }
   color: var(--text-dim);
 }
 
+.section__sub {
+  margin: 14px 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #6b7288;
+  text-transform: uppercase;
+}
+
 .row {
   display: flex;
   align-items: center;
