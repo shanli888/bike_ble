@@ -579,6 +579,9 @@
   async function remoteResubscribe() {
     if (remoteCtl && remoteCtl.resubscribe) await remoteCtl.resubscribe();
   }
+  async function remoteDump() {
+    if (remoteCtl && remoteCtl.dumpAll) await remoteCtl.dumpAll();
+  }
 
   /** 收到一次速度采样（来自设备 BF 回复） */
   function markSpeedSample(speed) {
@@ -696,6 +699,7 @@
     disconnectRemote,
     remotePing,
     remoteResubscribe,
+    remoteDump,
     /** 闪控状态（供 UI 显示冻结/停止） */
     getRemoteState() {
       return {

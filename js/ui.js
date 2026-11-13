@@ -199,6 +199,7 @@
     $('#btnRemoteDisconnect').addEventListener('click', () => app.disconnectRemote());
     $('#btnRemotePing').addEventListener('click', () => app.remotePing());
     $('#btnRemoteResub').addEventListener('click', () => app.remoteResubscribe());
+    $('#btnRemoteDump').addEventListener('click', () => app.remoteDump());
     $('#btnClearLog').addEventListener('click', () => {
       app.clearLogs();
       renderLog(true);
@@ -666,8 +667,10 @@
     els.btnRemoteDisconnect.disabled = r.status !== 'ready';
     const pingBtn = $('#btnRemotePing');
     const resubBtn = $('#btnRemoteResub');
+    const dumpBtn = $('#btnRemoteDump');
     if (pingBtn) pingBtn.disabled = r.status !== 'ready';
     if (resubBtn) resubBtn.disabled = r.status !== 'ready';
+    if (dumpBtn) dumpBtn.disabled = r.status !== 'ready';
   }
 
   /* ======================= 日志 ======================= */
