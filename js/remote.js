@@ -64,6 +64,8 @@
       status: 'idle', // idle | requesting | connecting | ready | disconnected | error
       device: null,
       error: null,
+      battery: null,    // 0~100（来自 180F/2A19）
+      signal: null,     // 预留
     };
     const listeners = {};
     let device = null;
@@ -234,6 +236,21 @@
         } catch (_) {}
       }
 
+      // 显式读一次电池电量
+      try {
+        const battSvc = await server.getPrimaryService('0000180f-0000-1000-8000-00805f9b34fb');
+        const battCh = await battSvc.getCharacteristic('00002a19-0000-1000-8000-00805f9b34fb');
+        const dv = await battCh.readValue();
+        const pct = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength)[0];
+        if (pct != null && pct <= 100) {
+          state.battery = pct;
+          emit('battery', pct);
+          log(`闪控电量: ${pct}%`);
+        }
+      } catch (e) {
+        log('读取电池失败: ' + (e.message || e));
+      }
+
       setStatus('ready');
       log('闪控已连接，请按一下 ▲ 或 ▼ 键');
       return state.device;
@@ -253,6 +270,20 @@
       const hex = Array.from(bytes, (b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
       emit('raw', `[${label}] ${hex}`);
       log(`← ${label} ${bytes.length}B: ${hex}`);
+
+      // 电池电量：标准 180F/2A19，单字节 0~100
+      const isBattery =
+        ch.uuid === '00002a19-0000-1000-8000-00805f9b34fb' ||
+        /2A19/i.test(ch.uuid);
+      if (isBattery && bytes.length >= 1) {
+        const pct = bytes[0];
+        if (pct <= 100) {
+          state.battery = pct;
+          emit('battery', pct);
+          log(`闪控电量: ${pct}%`);
+          return; // 不透传给按键解析
+        }
+      }
 
       // 按特征分别缓冲，避免互相污染
       let b = (bufs[label] || '') + hex;

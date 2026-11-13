@@ -450,7 +450,11 @@
   function attachRemote(rm) {
     remoteCtl = rm;
     rm.on('state', (s) => {
-      state.remote = { status: s.status, device: s.device, error: s.error };
+      state.remote = { status: s.status, device: s.device, error: s.error, battery: s.battery };
+      changed();
+    });
+    rm.on('battery', (pct) => {
+      state.remote.battery = pct;
       changed();
     });
     rm.on('device', (d) => {

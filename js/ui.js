@@ -662,6 +662,14 @@
     els.remoteName.textContent = r.device ? r.device.name : '未连接';
     els.remoteStatus.textContent = txt;
     els.remoteStatus.className = 'pill ' + cls;
+    // 闪控电量
+    const battEl = $('#remoteBattery');
+    if (battEl) {
+      const b = r.battery;
+      if (b == null) battEl.textContent = '--';
+      else battEl.textContent = `${b}%`;
+      battEl.style.color = b == null ? '' : b > 50 ? 'var(--green)' : b > 20 ? 'var(--amber-hi)' : 'var(--red)';
+    }
     const busy = r.status === 'requesting' || r.status === 'connecting';
     els.btnRemoteConnect.disabled = busy || r.status === 'ready';
     els.btnRemoteDisconnect.disabled = r.status !== 'ready';
