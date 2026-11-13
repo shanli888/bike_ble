@@ -463,9 +463,15 @@
     });
     rm.on('log', (text) => log('info', '[闪控] ' + text));
     rm.on('raw', (hex) => log('rx', '[闪控] ' + hex));
-    rm.on('key', ({ key, name }) => {
-      log('info', `[闪控] 识别按键: ${name} (码 ${key})`);
+    rm.on('key', ({ key, name, edge }) => {
+      log('info', `[闪控] 识别按键: ${name} (码 ${key}${edge ? ' ' + edge : ''})`);
       onRemoteKey(name);
+    });
+    rm.on('release', ({ key, name }) => {
+      log('info', `[闪控] 按键抬起: ${name} (码 ${key})`);
+    });
+    rm.on('unknownByte', ({ key, byte }) => {
+      log('info', `[闪控] 未知字节 0x${key} (${byte}) — 请记录对应按了哪个键`);
     });
     rm.on('other', (hex) => log('info', '[闪控] 未知帧: ' + hex));
     changed();

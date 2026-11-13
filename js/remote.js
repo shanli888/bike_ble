@@ -31,7 +31,31 @@
 
   const FRAME_PREFIX = '55AA0AA2A00001'; // 16 字符帧的前 14 位
 
-  /** 按下码 → 语义 */
+  /* ===== BR80 直连实际协议（文档 §6.2A / §6.2B，优先级最高）=====
+   * A2A4 通知只发单字节：
+   *   按下 0x05~0x09  → fw2.T1 的 switch#1（5 个键）
+   *   抬起 0x25~0x29  → switch#2（5 个键）
+   * 具体「字节 → 键名」文档尚未 100% 钉死，这里按 *候选顺序* 映射，
+   * 并把未知字节原样打日志，便于实机锁定。
+   *
+   * 电量：取通知串末 2 字符按 16 进制；"88" 表示电量充足（特殊标志）。
+   */
+  const BYTE_DOWN = {
+    '05': 'up',
+    '06': 'down',
+    '07': 'left',
+    '08': 'right',
+    '09': 'home',
+  };
+  const BYTE_UP = {
+    '25': 'up',
+    '26': 'down',
+    '27': 'left',
+    '28': 'right',
+    '29': 'home',
+  };
+
+  /** 按下码 → 语义（55AA 帧线路，仅作兼容保留） */
   const KEY_DOWN = {
     '07': 'up',
     '08': 'down',
@@ -225,6 +249,46 @@
       if (writeCh) chLabels.set(writeCh, `${w.svcLabel}/${w.label}`);
       log('写入特征: ' + (writeCh ? (chLabels.get(writeCh) || '未知') : '无'));
 
+      /* ===== 文档 §2.4A：必须做的激活序列 =====
+       * 1) 对 A2A3（写特征）也开通知并写 CCCD（op=4）
+       * 2) 向 A2A3 写单字节 0xFF（op=5，日志 rockWrite:）
+       * 不做这一步，闪控不会主动推送按键。
+       */
+      if (writeCh) {
+        const a2a3Label = chLabels.get(writeCh) || 'A2A3';
+        // 1) 尝试对 A2A3 开通知
+        try {
+          await writeCh.startNotifications();
+          if (!notifyChs.includes(writeCh)) {
+            writeCh.addEventListener('characteristicvaluechanged', onNotify);
+            notifyChs.push(writeCh);
+          }
+          log(`A2A3 已开启通知（rockWrite 通道）`);
+        } catch (e) {
+          log(`A2A3 开通知失败（一般正常，继续写 0xFF）: ${e.name || e.message || e}`);
+        }
+
+        // 2) 写单字节 0xFF 激活闪控
+        let wrote = false;
+        try {
+          await writeCh.writeValue(new Uint8Array([0xff]));
+          wrote = true;
+          log('↑ A2A3 写入 0xFF（激活闪控）');
+        } catch (e) {
+          try {
+            await writeCh.writeValueWithoutResponse(new Uint8Array([0xff]));
+            wrote = true;
+            log('↑ A2A3 写入 0xFF（无响应模式）');
+          } catch (e2) {
+            log('写 0xFF 失败: ' + (e.name || e.message || e));
+          }
+        }
+        if (wrote) {
+          // 稍等，让设备切换状态
+          await new Promise((r) => setTimeout(r, 300));
+        }
+      }
+
       // 主动读一次（部分设备读后才推送）
       for (const ch of notifyChs) {
         if (!ch.properties.read) continue;
@@ -271,21 +335,43 @@
       emit('raw', `[${label}] ${hex}`);
       log(`← ${label} ${bytes.length}B: ${hex}`);
 
-      // 电池电量：标准 180F/2A19，单字节 0~100
-      const isBattery =
-        ch.uuid === '00002a19-0000-1000-8000-00805f9b34fb' ||
-        /2A19/i.test(ch.uuid);
-      if (isBattery && bytes.length >= 1) {
-        const pct = bytes[0];
-        if (pct <= 100) {
-          state.battery = pct;
-          emit('battery', pct);
-          log(`闪控电量: ${pct}%`);
-          return; // 不透传给按键解析
+      /* ---- 1) 标准电池服务 180F/2A19：单字节百分比 ---- */
+      if (/2A19/i.test(ch.uuid)) {
+        if (bytes.length >= 1 && bytes[0] <= 100) {
+          state.battery = bytes[0];
+          emit('battery', bytes[0]);
+          log(`闪控电量: ${bytes[0]}%`);
         }
+        return;
       }
 
-      // 按特征分别缓冲，避免互相污染
+      /* ---- 2) A2A4：BR80 直连的单字节按键协议（文档 §6.2A）---- */
+      if (/A2A4/i.test(ch.uuid) && bytes.length === 1) {
+        handleSingleByte(bytes[0]);
+        return;
+      }
+
+      /* ---- 3) A2A3 通知：电量取末 2 字符（文档 §6.2B）---- */
+      if (/A2A3/i.test(ch.uuid) && hex.length > 3) {
+        const tail = hex.slice(-2);
+        if (tail === '88') {
+          log('闪控电量: 充足标志(88)');
+          if (state.battery == null || state.battery < 100) {
+            state.battery = 100;
+            emit('battery', 100);
+          }
+        } else {
+          const pct = parseInt(tail, 16);
+          if (isFinite(pct) && pct >= 0 && pct <= 100) {
+            state.battery = pct;
+            emit('battery', pct);
+            log(`闪控电量(末2位): ${pct}%`);
+          }
+        }
+        return;
+      }
+
+      /* ---- 4) 兼容：55AA 帧线路（头盔/SPP 路径）---- */
       let b = (bufs[label] || '') + hex;
       if (b.length > 512) b = b.slice(-128);
 
@@ -293,22 +379,36 @@
       while (guard++ < 20) {
         const idx = b.indexOf(FRAME_PREFIX);
         if (idx < 0) {
-          // 没有帧头：若有残留数据，打印后丢弃
-          if (b.length >= 4) log(`[${label}] 非按键数据: ${b}`);
+          if (b.length >= 4) log(`[${label}] 未识别数据: ${b}`);
           b = '';
           break;
         }
-        if (idx > 0) {
-          log(`[${label}] 丢弃帧前杂数据: ${b.slice(0, idx)}`);
-          b = b.slice(idx);
-        }
-        // 按键帧固定 16 个字符
-        if (b.length < 16) break; // 等后续分片
+        if (idx > 0) b = b.slice(idx);
+        if (b.length < 16) break;
         const frame = b.slice(0, 16);
         b = b.slice(16);
         decodeFrame(frame);
       }
       bufs[label] = b;
+    }
+
+    /** BR80 单字节按键：0x05~0x09 按下 / 0x25~0x29 抬起 */
+    function handleSingleByte(byteVal) {
+      const key = byteVal.toString(16).toUpperCase().padStart(2, '0');
+      const downName = BYTE_DOWN[key];
+      const upName = BYTE_UP[key];
+
+      if (downName) {
+        log(`按键按下 0x${key} → ${downName}`);
+        emit('key', { key, name: downName, edge: 'down', byte: byteVal });
+        return;
+      }
+      if (upName) {
+        emit('release', { key, name: upName, edge: 'up', byte: byteVal });
+        return;
+      }
+      log(`未知单字节 0x${key} (${byteVal})`);
+      emit('unknownByte', { key, byte: byteVal });
     }
 
     /** 解析 16 字符按键帧并派发事件 */
@@ -509,43 +609,44 @@
       }
     }
 
-    /** 诊断：依次写入多种候选帧，观察哪一种能激活闪控 */
+    /** 诊断：重新执行激活序列（写 0xFF + 对 A2A3 开通知） */
     async function ping() {
       if (!writeCh) {
         log('写入特征不可用');
         return;
       }
-      const candidates = [
-        // —— 26 字节长帧（文档 §3.1 / §5）——
-        ['长帧-UP载荷', buildDownlink('0AA2A0000102')],
-        ['长帧-上键', buildDownlink('0AA2A0000107')],
-        ['长帧-发现帧', buildDownlink('0AA2A00C')],
-        ['长帧-子命令01', buildDownlink('0AA2A00001')],
-        ['长帧-Jet握手', buildDownlink('1A00')],
-        // —— 短帧（文档 §7 原始常量）——
-        ['短帧-Jet ACK', '55AA1A00'],
-        ['短帧-发现', '55AA0AA2A00C'],
-        ['短帧-查询02', '55AA100201000002'],
-        ['短帧-查询040A', '55AA100201040A02'],
-        ['短帧-查询050A', '55AA100201050A02'],
-        ['短帧-3500', '55AA3500'],
-        ['短帧-3501', '55AA3501'],
-        ['短帧-保存ACK', '55AAD88888'],
-        ['短帧-C7', '55AAC7000102'],
-        // —— 纯按键码（最朴素的假设）——
-        ['裸码-07', '07'],
-        ['裸按键帧', '55AA0AA2A0000107'],
-      ];
-      for (const [desc, hex] of candidates) {
-        try {
-          await writeCh.writeValue(hexToBytes(hex));
-          log(`↑ ${desc} ${hex.length / 2}B: ${hex}`);
-        } catch (e) {
-          log(`↑ ${desc} 失败: ${e.name || e.message || e}`);
+      log('=== 重新执行激活序列 ===');
+      // 1) A2A3 开通知
+      try {
+        await writeCh.startNotifications();
+        if (!notifyChs.includes(writeCh)) {
+          writeCh.addEventListener('characteristicvaluechanged', onNotify);
+          notifyChs.push(writeCh);
         }
-        await new Promise((r) => setTimeout(r, 350));
+        log('A2A3 通知已开启');
+      } catch (e) {
+        log('A2A3 开通知失败: ' + (e.name || e.message || e));
       }
-      log('全部探测帧已发送，请按一下闪控按键，看是否出现 ← 数据');
+      // 2) 写 0xFF
+      const seq = [
+        ['0xFF（rockWrite 激活）', [0xff]],
+        ['0xFF 再次', [0xff]],
+      ];
+      for (const [desc, arr] of seq) {
+        try {
+          await writeCh.writeValue(new Uint8Array(arr));
+          log(`↑ A2A3 写入 ${desc}`);
+        } catch (e) {
+          try {
+            await writeCh.writeValueWithoutResponse(new Uint8Array(arr));
+            log(`↑ A2A3 写入 ${desc}（无响应）`);
+          } catch (e2) {
+            log(`写入 ${desc} 失败: ${e.name || e.message || e}`);
+          }
+        }
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      log('激活完成，请依次按 ▲ ▼ ◀ ▶ ● 键');
     }
 
     /** 诊断：重新订阅所有通知特征 */
