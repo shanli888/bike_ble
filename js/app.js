@@ -586,6 +586,12 @@
   async function remoteDump() {
     if (remoteCtl && remoteCtl.dumpAll) await remoteCtl.dumpAll();
   }
+  async function remoteSendRaw(hex) {
+    if (remoteCtl && remoteCtl.sendRaw) await remoteCtl.sendRaw(hex);
+  }
+  async function remoteForceNotify() {
+    if (remoteCtl && remoteCtl.forceNotify) await remoteCtl.forceNotify();
+  }
 
   /** 收到一次速度采样（来自设备 BF 回复） */
   function markSpeedSample(speed) {
@@ -704,6 +710,8 @@
     remotePing,
     remoteResubscribe,
     remoteDump,
+    remoteSendRaw,
+    remoteForceNotify,
     /** 闪控状态（供 UI 显示冻结/停止） */
     getRemoteState() {
       return {

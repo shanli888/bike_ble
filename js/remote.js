@@ -354,6 +354,68 @@
       log('闪控已断开');
     }
 
+    /** 诊断：手动写入任意十六进制帧到 A2A3 */
+    async function sendRaw(hex) {
+      if (!writeCh) {
+        log('写入特征不可用');
+        return;
+      }
+      const clean = (hex || '').toUpperCase().replace(/[^0-9A-F]/g, '');
+      if (!clean) {
+        log('输入为空');
+        return;
+      }
+      try {
+        await writeCh.writeValue(hexToBytes(clean));
+        log(`↑ 手动写入 ${clean.length / 2}B: ${clean}`);
+      } catch (e) {
+        try {
+          await writeCh.writeValueWithoutResponse(hexToBytes(clean));
+          log(`↑ 手动写入(无响应) ${clean.length / 2}B: ${clean}`);
+        } catch (e2) {
+          log('写入失败: ' + (e.message || e));
+        }
+      }
+    }
+
+    /** 诊断：强制用指定特征重新订阅 A2A4（含指示 indicate 模式） */
+    async function forceNotify() {
+      if (!notifyChs.length) {
+        log('没有可用的通知特征');
+        return;
+      }
+      for (const ch of notifyChs) {
+        const label = chLabels.get(ch) || '未知';
+        try { ch.removeEventListener('characteristicvaluechanged', onNotify); } catch (_) {}
+        try { await ch.stopNotifications(); } catch (_) {}
+        delete bufs[label];
+        // 只对带 notify/indicate 的重新订阅
+        try {
+          await ch.startNotifications();
+          ch.addEventListener('characteristicvaluechanged', onNotify);
+          log(`强制重订 ${label} 成功`);
+        } catch (e) {
+          // 手动写 CCCD：优先试 indicate(02 00)，再试 notify(01 00)
+          let done = false;
+          for (const v of [[2, 0], [1, 0]]) {
+            try {
+              const descs = await ch.getDescriptors();
+              const cccd = descs.find((d) => d.uuid.startsWith('00002902'));
+              if (cccd) {
+                await cccd.writeValue(new Uint8Array(v));
+                ch.addEventListener('characteristicvaluechanged', onNotify);
+                log(`强制重订 ${label} 写CCCD成功 [${v.join(',')}]`);
+                done = true;
+                break;
+              }
+            } catch (_) {}
+          }
+          if (!done) log(`强制重订 ${label} 失败: ${e.name || e.message || e}`);
+        }
+      }
+      log('强制重订完成，按一下闪控按键试试');
+    }
+
     /** 诊断：把设备所有特征读一遍，打印值与属性 */
     async function dumpAll() {
       if (!device || !device.gatt || !device.gatt.connected) {
@@ -393,31 +455,43 @@
       }
     }
 
-    /** 诊断：向写入特征依次写几种候选帧，观察是否触发通知 */
+    /** 诊断：依次写入多种候选帧，观察哪一种能激活闪控 */
     async function ping() {
       if (!writeCh) {
         log('写入特征不可用');
         return;
       }
-      // 按文档 §3.1 组装 26 字节帧：55 AA C0 14 01 + 20B payload + 19
-      // payload 用 0A A2 A0 00 01 02（即 UP 键的载荷）
       const candidates = [
-        buildDownlink('0AA2A0000102'),
-        buildDownlink('0AA2A0000107'),
-        buildDownlink('0AA2A00C'),      // 闪控发现帧
-        buildDownlink('0AA2A00001'),
-        buildDownlink('1A00'),          // Jet 握手 ACK
+        // —— 26 字节长帧（文档 §3.1 / §5）——
+        ['长帧-UP载荷', buildDownlink('0AA2A0000102')],
+        ['长帧-上键', buildDownlink('0AA2A0000107')],
+        ['长帧-发现帧', buildDownlink('0AA2A00C')],
+        ['长帧-子命令01', buildDownlink('0AA2A00001')],
+        ['长帧-Jet握手', buildDownlink('1A00')],
+        // —— 短帧（文档 §7 原始常量）——
+        ['短帧-Jet ACK', '55AA1A00'],
+        ['短帧-发现', '55AA0AA2A00C'],
+        ['短帧-查询02', '55AA100201000002'],
+        ['短帧-查询040A', '55AA100201040A02'],
+        ['短帧-查询050A', '55AA100201050A02'],
+        ['短帧-3500', '55AA3500'],
+        ['短帧-3501', '55AA3501'],
+        ['短帧-保存ACK', '55AAD88888'],
+        ['短帧-C7', '55AAC7000102'],
+        // —— 纯按键码（最朴素的假设）——
+        ['裸码-07', '07'],
+        ['裸按键帧', '55AA0AA2A0000107'],
       ];
-      for (const hex of candidates) {
+      for (const [desc, hex] of candidates) {
         try {
           await writeCh.writeValue(hexToBytes(hex));
-          log(`↑ 写入 ${hex.length / 2}B: ${hex}`);
+          log(`↑ ${desc} ${hex.length / 2}B: ${hex}`);
         } catch (e) {
-          log('写入失败 ' + (e.message || e));
+          log(`↑ ${desc} 失败: ${e.name || e.message || e}`);
         }
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 350));
       }
-      log('探测完成，看上面是否出现 ← 数据');
+      log('全部探测帧已发送，请按一下闪控按键，看是否出现 ← 数据');
     }
 
     /** 诊断：重新订阅所有通知特征 */
@@ -446,7 +520,7 @@
       log('重新订阅完成，请按一下闪控按键');
     }
 
-    return { state, on, connect, disconnect, ping, resubscribe, dumpAll, supported, UUID, KEY_DOWN, hexToBytes };
+    return { state, on, connect, disconnect, ping, resubscribe, dumpAll, sendRaw, forceNotify, supported, UUID, KEY_DOWN, hexToBytes };
   }
 
   root.LVBU = root.LVBU || {};

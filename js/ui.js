@@ -200,6 +200,11 @@
     $('#btnRemotePing').addEventListener('click', () => app.remotePing());
     $('#btnRemoteResub').addEventListener('click', () => app.remoteResubscribe());
     $('#btnRemoteDump').addEventListener('click', () => app.remoteDump());
+    $('#btnRemoteForce').addEventListener('click', () => app.remoteForceNotify());
+    $('#btnRemoteSendRaw').addEventListener('click', () => {
+      const inp = $('#remoteRawInput');
+      if (inp) app.remoteSendRaw(inp.value);
+    });
     $('#btnClearLog').addEventListener('click', () => {
       app.clearLogs();
       renderLog(true);
@@ -676,9 +681,13 @@
     const pingBtn = $('#btnRemotePing');
     const resubBtn = $('#btnRemoteResub');
     const dumpBtn = $('#btnRemoteDump');
+    const forceBtn = $('#btnRemoteForce');
+    const rawBtn = $('#btnRemoteSendRaw');
     if (pingBtn) pingBtn.disabled = r.status !== 'ready';
     if (resubBtn) resubBtn.disabled = r.status !== 'ready';
     if (dumpBtn) dumpBtn.disabled = r.status !== 'ready';
+    if (forceBtn) forceBtn.disabled = r.status !== 'ready';
+    if (rawBtn) rawBtn.disabled = r.status !== 'ready';
   }
 
   /* ======================= 日志 ======================= */
