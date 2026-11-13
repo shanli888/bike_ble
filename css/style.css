@@ -228,6 +228,18 @@ button { cursor: pointer; border: 0; background: none; }
 .panel__title b { font-size: 19px; font-weight: 600; white-space: nowrap; }
 .panel__title em { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
+/* 标题后的实时助力百分比 */
+.panel__pct {
+  font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--amber-hi);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.panel__pct.is-off { color: #5b6276; }
+
 /* 闪控连接状态：纯图标（无边框、靠右），连上绿色，未连灰色 */
 .remote-chip {
   display: inline-flex;

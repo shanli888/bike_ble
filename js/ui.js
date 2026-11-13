@@ -85,6 +85,7 @@
     els.btnPlus = $('#btnPlus');
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
+    els.assistPct = $('#assistPct');
     els.remoteChip = $('#remoteChip');
     
     els.remoteName = $('#remoteName');
@@ -322,6 +323,11 @@
     });
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
+      // 拖动过程中标题后的百分比同步跳动
+      if (els.assistPct) {
+        els.assistPct.textContent = `${els.slider.value}%`;
+        els.assistPct.classList.toggle('is-off', Number(els.slider.value) === 0);
+      }
     });
     els.slider.addEventListener('change', async () => {
       const v = Math.min(PCT_MAX, Number(els.slider.value));
@@ -471,6 +477,12 @@
     // 滑杆：用户正在拖动时不覆盖
     if (els.slider.dataset.touched !== '1') els.slider.value = String(draft.value);
     els.assistValue.textContent = els.slider.dataset.touched === '1' ? els.slider.value : String(draft.value);
+    // 标题后的实时百分比
+    if (els.assistPct) {
+      const shown = els.slider.dataset.touched === '1' ? els.slider.value : String(draft.value);
+      els.assistPct.textContent = `${shown}%`;
+      els.assistPct.classList.toggle('is-off', !ready || Number(shown) === 0);
+    }
 
     // 根据模式显示档位按钮或滑杆
     const isManual = draft.mode === 'manual';
@@ -491,27 +503,25 @@
       btn.disabled = !ready;
     });
 
-    els.note.hidden = !ready; // 未连接时整行隐藏
-
-    if (!ready) {
-      els.note.textContent = '';
-      els.panel.classList.add('is-locked');
-      els.panel.classList.remove('is-parked-ready');
-    } else {
+    // 提示行仅在闪控有状态时出现，平时隐藏
+    let note = '';
+    if (ready) {
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
-      els.note.textContent = isManual ? '拖动滑杆调整助力，实时下发给控制器' : '点击档位调整助力，实时下发';
-    }
-
-    // 闪控状态提示（覆盖上面的默认提示）
-    if (ready && app.getRemoteState) {
-      const rs = app.getRemoteState();
-      if (rs.stopped) {
-        els.note.textContent = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
-      } else if (rs.frozenMs > 0) {
-        els.note.textContent = `闪控操作冻结中 · ${Math.ceil(rs.frozenMs / 1000)} 秒后可再按`;
+      if (app.getRemoteState) {
+        const rs = app.getRemoteState();
+        if (rs.stopped) {
+          note = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
+        } else if (rs.frozenMs > 0) {
+          note = `闪控操作冻结中 · ${Math.ceil(rs.frozenMs / 1000)} 秒后可再按`;
+        }
       }
+    } else {
+      els.panel.classList.add('is-locked');
+      els.panel.classList.remove('is-parked-ready');
     }
+    els.note.textContent = note;
+    els.note.hidden = !note;
 
     renderRemoteChip();
     els.note.classList.remove('is-warn');

@@ -111,19 +111,59 @@
 
       setStatus('connecting');
       const server = await device.gatt.connect();
+
+      // 先枚举服务与特征，便于诊断
+      try {
+        const all = await server.getPrimaryServices();
+        const svcList = [];
+        for (const s of all) {
+          const chars = await s.getCharacteristics().catch(() => []);
+          svcList.push(
+            s.uuid + (chars.length ? ` [${chars.map((c) => c.uuid.slice(4, 8) + ':' + c.properties.write + '/' + c.properties.notify + '/' + c.properties.indicate).join(', ')}]` : '')
+          );
+        }
+        log('服务列表: ' + svcList.join(' | '));
+      } catch (e) {
+        log('枚举服务失败: ' + (e.message || e));
+      }
+
       const svc = await server.getPrimaryService(UUID.svc);
       notifyCh = await svc.getCharacteristic(UUID.noti);
+      log(`已获取通知特征 ${notifyCh.uuid.slice(4, 8)}`);
 
-      // 写 CCCD 打开通知
+      // 打开通知：先尝试 startNotifications，失败则手动写 CCCD
+      let subOk = false;
       try {
         await notifyCh.startNotifications();
+        subOk = true;
+        log('startNotifications 成功');
       } catch (e) {
-        // 某些实现需要手动写 CCCD
+        log('startNotifications 失败: ' + (e.message || e) + '，尝试手动写 CCCD');
+        try {
+          const cccd = await server
+            .getPrimaryService('00002902-0000-1000-8000-00805f9b34fb')
+            .catch(() => null);
+          if (cccd) await cccd.getCharacteristic(notifyCh.uuid).writeValue(new Uint8Array([1, 0]));
+        } catch (e2) {
+          // 走 characteristic 自带的 descriptor 路径
+          try {
+            const descs = await notifyCh.getDescriptors();
+            const c = descs.find((d) => d.uuid.startsWith('00002902'));
+            if (c) {
+              await c.writeValue(new Uint8Array([1, 0]));
+              subOk = true;
+              log('CCCD 写入成功（notify）');
+            }
+          } catch (e3) {
+            log('CCCD 写入也失败: ' + (e3.message || e3));
+          }
+        }
       }
+
       notifyCh.addEventListener('characteristicvaluechanged', onNotify);
 
       setStatus('ready');
-      log('闪控已连接，按键可用');
+      log(subOk ? '闪控已连接，等待按键…' : '闪控已连接但通知可能未开启，请按一下按键看日志');
       return state.device;
     }
 
@@ -131,32 +171,35 @@
       const v = evt.target.value;
       const bytes = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
       const hex = Array.from(bytes, (b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+      // 任何收到的字节都记录，便于实机诊断
       emit('raw', hex);
+      log(`收到通知 ${bytes.length} 字节: ${hex}`);
 
-      // 拼接分片：帧以 "02" 结尾才算完整
+      // 拼接分片
       buf += hex;
-      // 防止缓冲无限增长
       if (buf.length > 512) buf = buf.slice(-128);
 
-      // 逐帧提取：寻找 55AA 开头、02 结尾的完整段
+      // 逐帧提取：以 55AA 开头，按已知帧长切分；不确定长度时按 02 结尾判定
       let guard = 0;
       while (guard++ < 20) {
         const start = buf.indexOf('55AA');
-        if (start < 0) {
-          buf = '';
-          break;
-        }
+        if (start < 0) { buf = ''; break; }
         if (start > 0) buf = buf.slice(start);
-        // 闪控按键帧固定 9 字节 = 18 hex 字符，且以 02 结尾
         if (buf.length < 18) break;
+
         const frame = buf.slice(0, 18);
-        if (!frame.endsWith('02')) {
-          // 不是按键帧，尝试找下一帧
-          buf = buf.slice(2);
+        // 已知按键帧：55AA 0A A2 A0 00 01 <key> 02
+        if (frame.startsWith('55AA0AA2A00001') && frame.endsWith('02')) {
+          buf = buf.slice(18);
+          decodeFrame(frame);
           continue;
         }
-        buf = buf.slice(18);
-        decodeFrame(frame);
+        // 其它帧：找下一个 55AA 重新对齐
+        const next = buf.indexOf('55AA', 2);
+        if (next < 0) { buf = buf.slice(buf.length > 64 ? buf.length - 2 : 0); break; }
+        emit('other', buf.slice(0, next));
+        log('未知帧: ' + buf.slice(0, next));
+        buf = buf.slice(next);
       }
     }
 
