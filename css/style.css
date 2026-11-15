@@ -104,34 +104,36 @@ button { cursor: pointer; border: 0; background: none; }
 .appbar__icon.is-on { color: var(--green); }
 .appbar__icon:active { background: rgba(255, 255, 255, 0.06); }
 
-/* ---------------- 一屏布局（码表页无滚动） ---------------- */
+/* ---------------- 布局：可滚动，标签栏固定 ---------------- */
+html, body { height: 100%; }
 body {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  overflow: hidden;
+  display: block;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* 为固定定位的标签栏预留空间，避免内容被遮挡 */
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
 }
 .views {
-  flex: 1;
+  display: block;
   min-height: 0;
   padding-bottom: 0;
-  display: flex;
-  flex-direction: column;
 }
 .view {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: block;
   padding: 0;
   animation: fade .18s ease;
 }
 .view[hidden] { display: none; }
 
-/* 设备页 / 设置页仍然可滚动 */
+/* 码表页：用最小高度让内容在短屏也能完整展示（超出可滚动） */
+#page-dash {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--appbar-h) - var(--tabbar-h) - env(safe-area-inset-bottom, 0px));
+}
+
+/* 设备页 / 设置页 */
 #page-device, #page-settings {
-  display: block;
-  overflow-y: auto;
   padding: 0 var(--side) 8px;
 }
 
@@ -899,7 +901,7 @@ body {
 
 /* ---------------- 主速度区 ---------------- */
 .hero {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 186px;
   display: flex;
   flex-direction: column;
