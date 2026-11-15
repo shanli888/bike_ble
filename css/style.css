@@ -1273,3 +1273,67 @@ input.slider::-moz-range-thumb {
   align-self: flex-start;
   margin-top: 2px;
 }
+
+/* =========================================================================
+ * 电量 / 温度 动态配色（由 JS 设置 data-tone）
+ *   电量：>80 绿 · 50~80 蓝 · 20~50 橙 · <20 红
+ *   温度：<30 绿 · 30~50 黄 · >50 红
+ * 配色同时作用于：卡片描边+底色、分段条亮格、大读数、百分比标签
+ * ========================================================================= */
+:root {
+  --tone-green: #3ddc8c;
+  --tone-blue: #4aa8ff;
+  --tone-orange: #ff9f45;
+  --tone-red: #ff5a5a;
+  --tone-yellow: #ffd23f;
+}
+
+/* 主题色 → CSS 变量（每个 tone 一组） */
+.view .card[data-tone="green"] { --tone: var(--tone-green); }
+.view .card[data-tone="blue"] { --tone: var(--tone-blue); }
+.view .card[data-tone="orange"] { --tone: var(--tone-orange); }
+.view .card[data-tone="red"] { --tone: var(--tone-red); }
+.view .card[data-tone="yellow"] { --tone: var(--tone-yellow); }
+
+/* 卡片底 + 描边 */
+.view .card[data-tone] {
+  background: color-mix(in srgb, var(--tone) 4.5%, var(--card));
+  border-color: color-mix(in srgb, var(--tone) 34%, transparent);
+}
+@supports not (background: color-mix(in srgb, red 10%, blue)) {
+  /* 不支持 color-mix 时的兜底 */
+  .view .card[data-tone="green"] { background: rgba(61, 220, 140, .045); border-color: rgba(61, 220, 140, .34); }
+  .view .card[data-tone="blue"] { background: rgba(74, 168, 255, .045); border-color: rgba(74, 168, 255, .34); }
+  .view .card[data-tone="orange"] { background: rgba(255, 159, 69, .045); border-color: rgba(255, 159, 69, .34); }
+  .view .card[data-tone="red"] { background: rgba(255, 90, 90, .045); border-color: rgba(255, 90, 90, .34); }
+  .view .card[data-tone="yellow"] { background: rgba(255, 210, 63, .045); border-color: rgba(255, 210, 63, .34); }
+}
+
+/* 标题图标 + 百分比高亮 */
+.view .card[data-tone] header .i { color: var(--tone); }
+.view .card[data-tone] .card__hl { color: var(--tone); }
+
+/* 分段条外框描边 */
+.view .card[data-tone] .barframe {
+  border-color: color-mix(in srgb, var(--tone) 30%, transparent);
+}
+@supports not (background: color-mix(in srgb, red 10%, blue)) {
+  .view .card[data-tone] .barframe { border-color: var(--tone); opacity: 1; }
+}
+
+/* 分段条亮格 */
+.view .card[data-tone] .bgrid i.on {
+  background: var(--tone);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--tone) 55%, transparent);
+}
+@supports not (background: color-mix(in srgb, red 10%, blue)) {
+  .view .card[data-tone] .bgrid i.on { box-shadow: 0 0 6px var(--tone); }
+}
+
+/* 大读数 */
+.view .card[data-tone] .card__value { color: var(--tone); }
+
+/* 未取到数据时回到中性灰 */
+.view .card[data-tone="none"] { --tone: #8b95ad; }
+.view .card[data-tone="none"] .card__value,
+.view .card[data-tone="none"] header .i { color: var(--muted); }

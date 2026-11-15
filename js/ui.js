@@ -634,20 +634,28 @@
     renderBars('slopeGrid', angle == null ? null : util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
 
     // ===== 电量 =====
+    const battCard = document.getElementById('cardBattery');
     const voltEl = $('[data-field="voltage"]');
     const hasVolt = b.voltage != null && isFinite(b.voltage);
     voltEl.innerHTML = (hasVolt ? util.fixed(b.voltage, 1) : '--') + '<em class="u">V</em>';
-    document.getElementById('cardBattery').classList.toggle('is-empty', !hasVolt);
+    battCard.classList.toggle('is-empty', !hasVolt);
 
     const pct = b.battery != null && isFinite(b.battery) ? Math.round(b.battery) : null;
     $('[data-field="batterySub"]').textContent = pct == null ? '--%' : `${pct}%`;
-    renderBars('batteryGrid', pct == null ? null : pct / 100, pct == null ? 'low' : pct > 50 ? 'high' : pct > 20 ? 'mid' : 'low');
+    renderBars('batteryGrid', pct == null ? null : pct / 100);
+    // 电量配色：>80 绿 / 50~80 蓝 / 20~50 橙 / <20 红
+    battCard.dataset.tone =
+      pct == null ? 'none' : pct > 80 ? 'green' : pct >= 50 ? 'blue' : pct >= 20 ? 'orange' : 'red';
 
     // ===== 温度 =====
+    const tempCard = document.getElementById('cardTemp');
     const temp = b.controllerTemp != null && isFinite(b.controllerTemp) ? b.controllerTemp : null;
     setCard('cardTemp', temp, (v) => util.fixed(v, 1));
     // 温度进度条：0~100℃ 映射到 10 格
-    renderBars('tempGrid', temp == null ? null : util.clamp(temp / 100, 0, 1), 'mid');
+    renderBars('tempGrid', temp == null ? null : util.clamp(temp / 100, 0, 1));
+    // 温度配色：<30 绿 / 30~50 黄 / >50 红
+    tempCard.dataset.tone =
+      temp == null ? 'none' : temp < 30 ? 'green' : temp <= 50 ? 'yellow' : 'red';
   }
 
   function setCard(id, value, fmt) {
