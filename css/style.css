@@ -105,13 +105,15 @@ button { cursor: pointer; border: 0; background: none; }
 .appbar__icon:active { background: rgba(255, 255, 255, 0.06); }
 
 /* ---------------- 布局：可滚动，标签栏固定 ---------------- */
-html, body { height: 100%; }
+html { height: 100%; }
 body {
   display: block;
+  min-height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   /* 为固定定位的标签栏预留空间，避免内容被遮挡 */
-  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px);
 }
 .views {
   display: block;
@@ -123,9 +125,9 @@ body {
   padding: 0;
   animation: fade .18s ease;
 }
-.view[hidden] { display: none; }
+.view[hidden] { display: none !important; }
 
-/* 码表页：用最小高度让内容在短屏也能完整展示（超出可滚动） */
+/* 码表页：flex 纵向排布，内容超出时可滚动 */
 #page-dash {
   display: flex;
   flex-direction: column;
@@ -838,14 +840,19 @@ body {
 
 /* ---------------- 顶部应用栏（单行） ---------------- */
 .appbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 20px 12px;
+  height: auto;
+  margin-bottom: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 20px 12px;
   border-bottom: 1px solid var(--line);
-  background: var(--bg);
+  background: var(--bg-top, var(--bg));
 }
 .appbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .brand-ico { color: var(--green); display: inline-flex; flex: none; }

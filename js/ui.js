@@ -22,9 +22,22 @@
     cacheEls();
     paintIcons();
     buildModeRow();
-    bindEvents();
-    bindAppEvents();
-    syncSettingsInputs();
+    // 事件绑定容错：任一元素缺失不应阻断后续绑定（导航等核心功能优先）
+    try {
+      bindEvents();
+    } catch (err) {
+      console.error('[boot] bindEvents 失败：', err);
+    }
+    try {
+      bindAppEvents();
+    } catch (err) {
+      console.error('[boot] bindAppEvents 失败：', err);
+    }
+    try {
+      syncSettingsInputs();
+    } catch (err) {
+      console.error('[boot] syncSettingsInputs 失败：', err);
+    }
 
     // 传输层：Web Bluetooth（助力控制器）
     app.attachTransport(ble.createTransport(app.state.prefs));
@@ -132,15 +145,17 @@
 
   /* ======================= 事件绑定 ======================= */
   function bindEvents() {
+    // 底部导航最先绑定：即使后续元素缺失也不影响页面切换
     $$('.tab').forEach((tab) => {
       tab.addEventListener('click', () => app.go(tab.dataset.tab));
     });
 
-    $('#brandBtn').addEventListener('click', () => {
-      const d = app.state.conn.device;
-      toast(d ? `已连接：${d.name}` : '点击「设备」页选择码表');
-      app.go('device');
-    });
+    // 顶栏设备名：点击跳转到设备页（替代旧的 brandBtn）
+    const headNameEl = $('#devName');
+    if (headNameEl) {
+      headNameEl.addEventListener('click', () => app.go('device'));
+      headNameEl.style.cursor = 'pointer';
+    }
 
     els.btnPower.addEventListener('click', () => {
       const st = app.state.conn.status;
