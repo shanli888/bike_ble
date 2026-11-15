@@ -7,6 +7,8 @@
 
   const P = {
     // 助力面板
+    // 自行车（两轮 + 三角车架 + 车把 + 座垫）
+    bike: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.6" cy="16.4" r="3.4"/><circle cx="18.4" cy="16.4" r="3.4"/><path d="M5.6 16.4l4-6.4h4.2"/><path d="M9.6 10h4.6l2.6 6.4"/><path d="M13.8 16.4H7.2"/><path d="M9.2 8.2h2.6"/><path d="M16.6 8.6h2.2"/></svg>',
     assist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16h18"/><circle cx="6" cy="13" r="2.6"/><circle cx="17" cy="10" r="2.2"/><path d="M8.6 13l4-4.5 3 2 2.4-2.5"/><path d="M3 16c2.5-1.5 5.5-2 9-2s6.5.5 9 2"/></svg>',
     commute:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="16" r="3.4"/><circle cx="18" cy="16" r="3.4"/><path d="M6 16l3.6-6h4L18 16"/><path d="M9.6 10l-1.2-2.4M13.6 10l1.8-2.8"/></svg>',

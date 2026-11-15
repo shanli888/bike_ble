@@ -104,15 +104,36 @@ button { cursor: pointer; border: 0; background: none; }
 .appbar__icon.is-on { color: var(--green); }
 .appbar__icon:active { background: rgba(255, 255, 255, 0.06); }
 
-/* ============================ 视图 ============================ */
-.views {
-  min-height: calc(100% - var(--appbar-h));
-  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px);
+/* ---------------- 一屏布局（码表页无滚动） ---------------- */
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
 }
-
-.view { padding: 0 var(--side) 8px; animation: fade 0.18s ease; }
+.views {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+.view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  animation: fade .18s ease;
+}
 .view[hidden] { display: none; }
-@keyframes fade { from { opacity: 0.35; } to { opacity: 1; } }
+
+/* 设备页 / 设置页仍然可滚动 */
+#page-device, #page-settings {
+  display: block;
+  overflow-y: auto;
+  padding: 0 var(--side) 8px;
+}
 
 /* ============================ 连接状态条 ============================ */
 .connbar {
@@ -776,4 +797,463 @@ button { cursor: pointer; border: 0; background: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* =========================================================================
+ * 2026-11-15 码表页重新设计（依据 speedometer-layout-spec）
+ * 基准视口 390×844，一屏放下无滚动
+ * ========================================================================= */
+
+:root {
+  --bg: #0b0f1d;
+  --bg2: #10162a;
+  --card: #151c2f;
+  --card2: #1b2338;
+  --line: rgba(255, 255, 255, .09);
+  --txt: #f2f5fc;
+  --muted: #8b95ad;
+  --muted2: #aab5cb;
+  --orange: #ffb020;
+  --green: #3ddc8c;
+  --blue: #4aa8ff;
+  --amber: #ff9f45;
+  --seg-on: #f4f9ff;
+  --seg-glow: rgba(130, 190, 255, .16);
+  --seg-ghost: rgba(150, 175, 215, .07);
+}
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------------- 顶部应用栏（单行） ---------------- */
+.appbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 20px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.appbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.brand-ico { color: var(--green); display: inline-flex; flex: none; }
+.brand-ico svg { width: 15px; height: 15px; }
+.dev-name {
+  font-size: 15px; font-weight: 600; color: #e9eefb;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conn-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 21px; padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  color: var(--muted2);
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .09);
+  white-space: nowrap; flex: none;
+}
+.conn-badge__dot { width: 6px; height: 6px; border-radius: 50%; background: #5b6276; flex: none; }
+.conn-badge.is-connected {
+  color: var(--green);
+  background: rgba(61, 220, 140, .10);
+  border-color: rgba(61, 220, 140, .20);
+}
+.conn-badge.is-connected .conn-badge__dot {
+  background: var(--green);
+  box-shadow: 0 0 6px 1px rgba(61, 220, 140, .55);
+}
+.appbar-right { display: flex; align-items: center; gap: 12px; flex: none; }
+.sig { display: inline-flex; align-items: center; gap: 5px; }
+.sig .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 15px; }
+.sig .bars i { width: 3px; border-radius: 1px; background: rgba(255, 255, 255, .16); }
+.sig .bars i:nth-child(1) { height: 5px; }
+.sig .bars i:nth-child(2) { height: 8px; }
+.sig .bars i:nth-child(3) { height: 11px; }
+.sig .bars i:nth-child(4) { height: 15px; }
+.sig .bars i.on { background: var(--muted2); }
+.sig__dbm { font-size: 11.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.power-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .09);
+  color: var(--muted2);
+  transition: background .2s, color .2s, border-color .2s;
+}
+.power-btn svg { width: 17px; height: 17px; }
+.power-btn.is-on {
+  color: var(--green);
+  background: rgba(61, 220, 140, .09);
+  border-color: rgba(61, 220, 140, .28);
+}
+
+/* ---------------- 主速度区 ---------------- */
+.hero {
+  flex: 1;
+  min-height: 186px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px 0;
+}
+.speed-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+}
+/* 七段槽位：ghost 底纹锁位宽 + on 叠加 */
+.seg-slot { position: relative; display: inline-flex; }
+.seg-slot > .ghost,
+.seg-slot > .on {
+  font-family: 'SEGClassic', 'DSEG7-Classic', monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+.seg-slot > .ghost { color: var(--seg-ghost); }
+.seg-slot > .on {
+  position: absolute; left: 0; top: 0;
+  color: var(--seg-on);
+  text-shadow: 0 0 24px var(--seg-glow), 0 0 6px var(--seg-glow);
+}
+.seg-int > .ghost, .seg-int > .on { font-size: 128px; }
+.seg-frac > .ghost, .seg-frac > .on { font-size: 74px; }
+.seg-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--seg-on);
+  box-shadow: 0 0 18px var(--seg-glow), 0 0 5px var(--seg-glow);
+  margin: 0 6px 0 3px;
+  align-self: flex-end;
+  margin-bottom: 0;
+}
+.speed-row .unit {
+  font-size: 15px; font-weight: 600; color: var(--muted2);
+  letter-spacing: 1px;
+  align-self: flex-start;
+  margin-left: 8px;
+  margin-top: 12px;
+}
+
+/* ---------------- 副表 AVG / MAX / km ---------------- */
+.substats {
+  flex: none;
+  display: flex;
+  margin: 2px 14px 0;
+  padding: 24px 0 14px;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+.sub { flex: 1; display: flex; justify-content: center; position: relative; }
+.sub + .sub::before {
+  content: '';
+  position: absolute; left: 0; top: 10%;
+  width: 1px; height: 80%;
+  background: rgba(255, 255, 255, .13);
+}
+.s-row { display: flex; align-items: flex-end; }
+.s-int, .s-frac { position: relative; display: inline-flex; }
+.s-int > .ghost, .s-int > .on,
+.s-frac > .ghost, .s-frac > .on,
+.s-dot {
+  font-family: 'SEGClassic', 'DSEG7-Classic', monospace;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.s-int > .ghost, .s-int > .on { font-size: 36px; color: #e9f1ff; }
+.s-frac > .ghost, .s-frac > .on { font-size: 28px; color: #e9f1ff; }
+.s-int > .ghost, .s-frac > .ghost { color: var(--seg-ghost); }
+.s-int > .on, .s-frac > .on {
+  position: absolute; left: 0; top: 0;
+  text-shadow: 0 0 12px rgba(130, 180, 255, .10);
+}
+.s-dot { font-size: 36px; color: #e9f1ff; }
+.s-cap {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  font-style: normal;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .6px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------------- 版本号 ---------------- */
+.version {
+  flex: none;
+  margin: 10px 0 12px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: .6px;
+  color: rgba(160, 175, 200, .42);
+}
+
+/* ---------------- 助力控制卡片（重新设计） ---------------- */
+.view .panel {
+  flex: none;
+  margin: 16px 16px 0;
+  padding: 17px 16px 16px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(155deg, #2c2314, #1a1c28 34%, #141b2d) padding-box,
+    linear-gradient(150deg, rgba(255, 190, 80, .95), rgba(255, 160, 40, .35) 38%, rgba(255, 180, 60, .55)) border-box;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.panel__title { display: inline-flex; align-items: center; gap: 7px; flex: none; white-space: nowrap; }
+.panel__title b { font-size: 16px; font-weight: 700; color: var(--txt); }
+.panel__title .i svg { width: 19px; height: 19px; }
+
+.remote-chip { color: var(--muted2); }
+.remote-chip__icon svg { width: 18px; height: 18px; }
+.remote-chip.is-ready { color: var(--green); }
+.remote-chip.is-busy { color: var(--amber); }
+
+.panel__note {
+  margin: 9px 0 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--green);
+  min-height: 19px;
+}
+.panel.is-locked .panel__note { color: var(--muted); }
+.panel__note.is-warn { color: var(--amber); }
+
+/* 模式按钮行：图标在上、文字在下 */
+.modes { display: flex; gap: 7px; margin-top: 15px; }
+.mode {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #cfd4e0;
+  background: rgba(255, 255, 255, .055);
+  border: 1px solid rgba(255, 255, 255, .06);
+  transition: background .16s, color .16s, border-color .16s;
+}
+.mode .i svg { width: 15px; height: 15px; }
+.mode:active { transform: scale(.97); }
+.mode.is-active {
+  color: #20160a;
+  background: linear-gradient(180deg, #ffc44d, #f5a015);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(245, 160, 20, .32);
+}
+.mode.is-draft { border-color: rgba(255, 176, 32, .45); }
+
+/* 档位按钮 */
+.levels { display: flex; gap: 6px; margin-top: 15px; }
+.level-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #cfd4e0;
+  background: rgba(255, 255, 255, .055);
+  border: 1px solid rgba(255, 255, 255, .06);
+}
+.level-btn.is-active {
+  color: #20160a;
+  background: linear-gradient(180deg, #ffc44d, #f5a015);
+  border-color: transparent;
+}
+
+/* 滑杆行 */
+.assist-ctl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.btn-ctl {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #cfd4e0;
+  background: rgba(255, 255, 255, .055);
+  border: 1px solid rgba(255, 255, 255, .06);
+}
+.btn-ctl svg { width: 18px; height: 18px; }
+.btn-ctl:disabled { opacity: .38; }
+
+.sliderwrap { flex: 1; min-width: 0; display: flex; align-items: center; }
+input.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 23px;
+  background: transparent;
+  margin: 0;
+}
+input.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .13);
+}
+input.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 23px; height: 23px;
+  margin-top: -8.5px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+}
+input.slider::-moz-range-track {
+  height: 6px; border-radius: 3px;
+  background: rgba(255, 255, 255, .13);
+}
+input.slider::-moz-range-thumb {
+  width: 23px; height: 23px; border: 0;
+  border-radius: 50%; background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+}
+
+/* 助力百分比读数（右下角小字） */
+.assist-ctl__value {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+}
+
+/* ---------------- 传感器卡片行 ---------------- */
+.view .cards {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 16px 0;
+}
+.view .card {
+  min-height: 0;
+  height: 109px;
+  padding: 10px 9px 12px;
+  border-radius: 13px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid transparent;
+}
+.view .card--green {
+  background: rgba(61, 220, 140, .043);
+  border-color: rgba(61, 220, 140, .34);
+}
+.view .card--amber {
+  background: rgba(255, 159, 69, .045);
+  border-color: rgba(255, 159, 69, .34);
+}
+.view .card--cyan {
+  background: rgba(74, 168, 255, .045);
+  border-color: rgba(74, 168, 255, .34);
+}
+
+.view .card header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #d6deed;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.view .card header .i svg { width: 13px; height: 13px; }
+.view .card--green header .i { color: var(--green); }
+.view .card--amber header .i { color: var(--amber); }
+.view .card--cyan header .i { color: var(--blue); }
+.view .card__hl { font-size: 11.5px; font-weight: 700; color: var(--green); }
+.view .card--amber .card__hl { color: var(--amber); }
+.view .card--cyan .card__hl { color: var(--blue); }
+
+/* 分段条 */
+.view .barframe {
+  margin-top: 8px;
+  margin-bottom: 0;
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, .10);
+  background: rgba(255, 255, 255, .02);
+}
+.view .card--green .barframe { border-color: rgba(61, 220, 140, .30); }
+.view .card--amber .barframe { border-color: rgba(255, 159, 69, .30); }
+.view .card--cyan .barframe { border-color: rgba(74, 168, 255, .30); }
+
+.view .bgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.view .bgrid i {
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .09);
+  transition: background .3s;
+}
+.view .card--green .bgrid i.on { background: var(--green); box-shadow: 0 0 6px rgba(61, 220, 140, .55); }
+.view .card--amber .bgrid i.on { background: var(--amber); box-shadow: 0 0 6px rgba(255, 159, 69, .55); }
+.view .card--cyan .bgrid i.on { background: var(--blue); box-shadow: 0 0 6px rgba(74, 168, 255, .55); }
+
+/* 大读数：系统细体 32px */
+.view .card__value {
+  margin-top: auto;
+  margin-bottom: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+.view .card--green .card__value { color: var(--green); }
+.view .card--amber .card__value { color: var(--amber); }
+.view .card--cyan .card__value { color: var(--blue); }
+/* 单位后缀 */
+.view .card__value .u {
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: .9;
+}
+.view .card__value .u--sup {
+  font-size: 17px;
+  align-self: flex-start;
+  margin-top: 2px;
 }

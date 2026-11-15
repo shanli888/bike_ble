@@ -9,21 +9,26 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
-  <link rel="stylesheet" href="css/style.css?v=20" />
+  <link rel="stylesheet" href="assets/seg7-font.css?v=1" />
+  <link rel="stylesheet" href="css/style.css?v=21" />
 </head>
 <body>
 
-<!-- ============ 顶部标题栏 ============ -->
+<!-- ============ 应用标题栏（单行：设备名 + 连接徽章 + 信号 + 电源） ============ -->
 <header class="appbar">
-  <div class="appbar__side appbar__side--left">
-    <button class="appbar__brand" id="brandBtn" type="button" aria-label="正在使用的电机品牌">
-      <span class="i i--bluetooth" data-icon="bluetooth" data-size="15"></span>
-      <span>LvBu motor</span>
-    </button>
+  <div class="appbar-left">
+    <span class="i brand-ico" data-icon="bluetooth" data-size="15"></span>
+    <span class="dev-name" id="devName">LvBu motor</span>
+    <span class="conn-badge" id="connBadge">
+      <i class="conn-badge__dot"></i><span id="connBadgeText">未连接</span>
+    </span>
   </div>
-  <h1 class="appbar__title" id="appTitle">智能码表</h1>
-  <div class="appbar__side appbar__side--right">
-    <button class="appbar__icon" id="btnPower" type="button" aria-label="连接 / 断开" title="连接 / 断开">
+  <div class="appbar-right">
+    <span class="sig">
+      <span class="bars" id="signalBars"><i></i><i></i><i></i><i></i></span>
+      <span class="sig__dbm" id="rssiText">-- dBm</span>
+    </span>
+    <button class="power-btn" id="btnPower" type="button" aria-label="连接 / 断开" title="连接 / 断开">
       <span class="i" data-icon="plug" data-size="17"></span>
     </button>
   </div>
@@ -33,27 +38,47 @@
 
   <!-- ==================== 码表 ==================== -->
   <section class="view" id="page-dash" data-page="dash" aria-labelledby="appTitle">
+    <h1 class="sr-only" id="appTitle">智能码表</h1>
 
-    <div class="connbar">
-      <span class="connbar__left" id="connLeft">
-        <span class="dot" id="connDot"></span><span id="connText">未连接</span>
-      </span>
-      <span class="connbar__right" id="connRight">
-        <span class="bars" id="signalBars"><i></i><i></i><i></i><i></i></span>
-        <span class="connbar__dbm" id="rssiText">-- dBm</span>
-      </span>
+    <!-- 主速度区 -->
+    <div class="hero" id="speedBlock">
+      <div class="speed-row">
+        <span class="seg-slot seg-int" aria-label="速度整数">
+          <span class="ghost" aria-hidden="true">88</span>
+          <span class="on" id="speedInt">00</span>
+        </span>
+        <span class="seg-dot" aria-hidden="true"></span>
+        <span class="seg-slot seg-frac" aria-label="速度小数">
+          <span class="ghost" aria-hidden="true">8</span>
+          <span class="on" id="speedFrac">0</span>
+        </span>
+        <span class="unit" id="speedUnit">km/h</span>
+      </div>
     </div>
 
-    <!-- 速度 -->
-    <div class="speed" id="speedBlock">
-      <span class="speed__value" id="speedValue">0.0</span>
-      <span class="speed__unit" id="speedUnit">km/h</span>
-    </div>
-
-    <div class="stats" id="statsRow">
-      <div class="stat"><span class="stat__label">AVG</span><span class="stat__value" id="statAvg">--</span></div>
-      <div class="stat"><span class="stat__label">MAX</span><span class="stat__value" id="statMax">--</span></div>
-      <div class="stat"><span class="stat__label">里程</span><span class="stat__value" id="statTrip">--</span></div>
+    <!-- 副表：AVG / MAX / km -->
+    <div class="substats" id="statsRow">
+      <div class="sub">
+        <div class="s-row">
+          <span class="s-int"><span class="ghost" aria-hidden="true">88</span><span class="on" id="statAvgInt">00</span></span>
+          <span class="s-dot">.</span>
+          <span class="s-frac"><span class="ghost" aria-hidden="true">8</span><span class="on" id="statAvgFrac">0</span><em class="s-cap">AVG</em></span>
+        </div>
+      </div>
+      <div class="sub">
+        <div class="s-row">
+          <span class="s-int"><span class="ghost" aria-hidden="true">88</span><span class="on" id="statMaxInt">00</span></span>
+          <span class="s-dot">.</span>
+          <span class="s-frac"><span class="ghost" aria-hidden="true">8</span><span class="on" id="statMaxFrac">0</span><em class="s-cap">MAX</em></span>
+        </div>
+      </div>
+      <div class="sub">
+        <div class="s-row">
+          <span class="s-int"><span class="ghost" aria-hidden="true">88</span><span class="on" id="statTripInt">00</span></span>
+          <span class="s-dot">.</span>
+          <span class="s-frac"><span class="ghost" aria-hidden="true">8</span><span class="on" id="statTripFrac">0</span><em class="s-cap">km</em></span>
+        </div>
+      </div>
     </div>
 
     <!-- 未连接引导（演示数据关闭且未连接时显示） -->
@@ -70,16 +95,15 @@
     <section class="panel" id="assistPanel" aria-label="助力控制">
       <div class="panel__head">
         <span class="panel__title">
-          <span class="i i--orange" data-icon="assist" data-size="20"></span>
+          <span class="i i--orange" data-icon="bike" data-size="19"></span>
           <b>助力控制</b>
-          <em class="panel__pct" id="assistPct">0%</em>
         </span>
         <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
-          <span class="i remote-chip__icon" data-icon="remote" data-size="20"></span>
+          <span class="i remote-chip__icon" data-icon="remote" data-size="18"></span>
         </span>
       </div>
 
-      <p class="panel__note" id="assistNote">模式设置需停车确认；停止助力等控制仍停用</p>
+      <p class="panel__note" id="assistNote">拖动滑杆调整助力，实时下发给控制器</p>
 
       <div class="modes" id="modeRow" role="group" aria-label="骑行模式"></div>
 
@@ -119,7 +143,7 @@
         <div class="barframe">
           <div class="bgrid" data-field="batteryGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </div>
-        <div class="card__value card__value--volt" data-field="voltage">--V</div>
+        <div class="card__value" data-field="voltage">--<em class="u">V</em></div>
       </article>
 
       <article class="card card--amber" id="cardTemp">
@@ -130,7 +154,7 @@
         <div class="barframe">
           <div class="bgrid" data-field="tempGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </div>
-        <div class="card__value" data-field="temp">--</div>
+        <div class="card__value" data-field="temp">--<em class="u">℃</em></div>
       </article>
 
       <article class="card card--cyan" id="cardGyro">
@@ -141,11 +165,11 @@
         <div class="barframe">
           <div class="bgrid" data-field="slopeGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </div>
-        <div class="card__value" data-field="slope">--</div>
+        <div class="card__value" data-field="slope">--<em class="u u--sup">°</em></div>
       </article>
     </section>
 
-    <div class="buildinfo" id="buildInfo">v2.0.2 · 2026-11-13 14:20</div>
+    <div class="version" id="buildInfo">v3.0.0 · 2026-11-15 10:20</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -155,7 +179,7 @@
       <h2 class="section__title">连接</h2>
       <div class="devcard">
         <div class="devcard__top">
-          <span class="devcard__name" id="devName">未连接</span>
+          <span class="devcard__name" id="devNameCard">未连接</span>
           <span class="pill" id="devStatus">未连接</span>
         </div>
         <dl class="kv">
@@ -346,7 +370,7 @@
         <button class="btn" id="btnReset" type="button">恢复默认设置</button>
         <button class="btn btn--ghost" id="btnExportLogs" type="button" hidden>导出日志</button>
       </div>
-      <p class="hint version" id="appVersion">v2.0.2 · LVBU 码表</p>
+      <p class="hint version" id="appVersion">v3.0.0 · LVBU 码表</p>
     </div>
   </section>
 
@@ -370,15 +394,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=44"></script>
-<script src="js/protocol.js?v=44"></script>
-<script src="js/config.js?v=44"></script>
-<script src="js/adapter.js?v=44"></script>
-<script src="js/ble.js?v=44"></script>
-<script src="js/remote.js?v=44"></script>
-<script src="js/app.js?v=44"></script>
-<script src="js/icons.js?v=44"></script>
-<script src="js/sim.js?v=44"></script>
-<script src="js/ui.js?v=44"></script>
+<script src="js/util.js?v=45"></script>
+<script src="js/protocol.js?v=45"></script>
+<script src="js/config.js?v=45"></script>
+<script src="js/adapter.js?v=45"></script>
+<script src="js/ble.js?v=45"></script>
+<script src="js/remote.js?v=45"></script>
+<script src="js/app.js?v=45"></script>
+<script src="js/icons.js?v=45"></script>
+<script src="js/sim.js?v=45"></script>
+<script src="js/ui.js?v=45"></script>
 </body>
 </html>

@@ -64,16 +64,21 @@
   }
 
   function cacheEls() {
-    els.connLeft = $('#connLeft');
-    els.connText = $('#connText');
-    els.connRight = $('#connRight');
+    els.connBadge = $('#connBadge');
+    els.connBadgeText = $('#connBadgeText');
     els.rssiText = $('#rssiText');
     els.signalBars = $('#signalBars');
-    els.speedValue = $('#speedValue');
+    // 主速度：整数位 / 小数位分离（七段数码管）
+    els.speedInt = $('#speedInt');
+    els.speedFrac = $('#speedFrac');
     els.speedUnit = $('#speedUnit');
-    els.statAvg = $('#statAvg');
-    els.statMax = $('#statMax');
-    els.statTrip = $('#statTrip');
+    // 副表：整数 / 小数分离
+    els.statAvgInt = $('#statAvgInt');
+    els.statAvgFrac = $('#statAvgFrac');
+    els.statMaxInt = $('#statMaxInt');
+    els.statMaxFrac = $('#statMaxFrac');
+    els.statTripInt = $('#statTripInt');
+    els.statTripFrac = $('#statTripFrac');
     els.panel = $('#assistPanel');
     
     els.note = $('#assistNote');
@@ -85,14 +90,14 @@
     els.btnPlus = $('#btnPlus');
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
-    els.assistPct = $('#assistPct');
+    els.headDevName = $('#devName');
     els.remoteChip = $('#remoteChip');
     
     els.remoteName = $('#remoteName');
     els.remoteStatus = $('#remoteStatus');
     els.btnRemoteConnect = $('#btnRemoteConnect');
     els.btnRemoteDisconnect = $('#btnRemoteDisconnect');
-    els.devName = $('#devName');
+    els.devName = $('#devNameCard');
     els.devStatus = $('#devStatus');
     els.devId = $('#devId');
     els.devRssi = $('#devRssi');
@@ -332,11 +337,6 @@
     });
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
-      // 拖动过程中标题后的百分比同步跳动
-      if (els.assistPct) {
-        els.assistPct.textContent = `${els.slider.value}%`;
-        els.assistPct.classList.toggle('is-off', Number(els.slider.value) === 0);
-      }
     });
     els.slider.addEventListener('change', async () => {
       const v = Math.min(PCT_MAX, Number(els.slider.value));
@@ -435,13 +435,13 @@
     const demo = !!app.state.prefs.simulateWhenDisconnected && root.LVBU.sim && root.LVBU.sim.running;
     const ready = conn.status === 'ready' || demo;
     const busy = conn.status === 'connecting' || conn.status === 'discovering' || conn.status === 'requesting';
-    els.connLeft.classList.toggle('is-connected', ready);
-    els.connText.textContent = ready
+    els.connBadge.classList.toggle('is-connected', ready);
+    els.connBadgeText.textContent = ready
       ? demo
         ? '演示模式'
         : '已连接'
       : busy
-      ? '连接中…'
+      ? '连接中'
       : conn.status === 'disconnected' || conn.status === 'error'
       ? '已断开'
       : '未连接';
@@ -455,18 +455,34 @@
     els.rssiText.textContent = ready ? (rssi == null ? '-- dBm' : `${rssi} dBm`) : '-- dBm';
   }
 
+  /** 把数值拆成「整数位 / 小数位」两段，固定位数避免抖动 */
+  function splitNum(v, intDigits, fallback) {
+    if (v == null || !isFinite(v)) return fallback;
+    const clamped = Math.max(0, Math.min(99.9, Number(v)));
+    const s = clamped.toFixed(1);
+    const [ip, fp] = s.split('.');
+    return { int: ip.padStart(intDigits, '0').slice(-intDigits), frac: fp };
+  }
+
   function renderSpeed() {
     const b = app.state.bike;
-    // 直接显示设备返回速度（km/h），无单位换算
-    const sp = b.speed;
-    els.speedValue.textContent = util.fixed(sp, 1);
+    // 主速度：整数 2 位 + 小数 1 位（0.0 ~ 99.9）
+    const sp = splitNum(b.speed, 2, { int: '00', frac: '0' });
+    els.speedInt.textContent = sp.int;
+    els.speedFrac.textContent = sp.frac;
     els.speedUnit.textContent = 'km/h';
-    els.statAvg.textContent = util.fixed(b.avgSpeed, 1);
-    els.statMax.textContent = util.fixed(b.maxSpeed, 1);
-    els.statTrip.textContent = `${util.fixed(b.trip, 1)} km`;
-    // 数字宽度自适应，避免超长时溢出
-    const len = els.speedValue.textContent.length;
-    els.speedValue.style.fontSize = len >= 5 ? '96px' : len >= 4 ? '112px' : '';
+
+    // 副表：AVG / MAX 补零到 2 位，里程不补零
+    const avg = splitNum(b.avgSpeed, 2, { int: '00', frac: '0' });
+    const max = splitNum(b.maxSpeed, 2, { int: '00', frac: '0' });
+    const trip = splitNum(b.trip, 2, { int: '00', frac: '0' });
+
+    els.statAvgInt.textContent = avg.int;
+    els.statAvgFrac.textContent = avg.frac;
+    els.statMaxInt.textContent = max.int;
+    els.statMaxFrac.textContent = max.frac;
+    els.statTripInt.textContent = trip.int;
+    els.statTripFrac.textContent = trip.frac;
   }
 
   function renderAssist() {
@@ -486,12 +502,6 @@
     // 滑杆：用户正在拖动时不覆盖
     if (els.slider.dataset.touched !== '1') els.slider.value = String(draft.value);
     els.assistValue.textContent = els.slider.dataset.touched === '1' ? els.slider.value : String(draft.value);
-    // 标题后的实时百分比
-    if (els.assistPct) {
-      const shown = els.slider.dataset.touched === '1' ? els.slider.value : String(draft.value);
-      els.assistPct.textContent = `${shown}%`;
-      els.assistPct.classList.toggle('is-off', !ready || Number(shown) === 0);
-    }
 
     // 根据模式显示档位按钮或滑杆
     const isManual = draft.mode === 'manual';
@@ -587,7 +597,7 @@
     // ===== 电量 =====
     const voltEl = $('[data-field="voltage"]');
     const hasVolt = b.voltage != null && isFinite(b.voltage);
-    voltEl.textContent = hasVolt ? `${util.fixed(b.voltage, 1)}V` : '--';
+    voltEl.innerHTML = (hasVolt ? util.fixed(b.voltage, 1) : '--') + '<em class="u">V</em>';
     document.getElementById('cardBattery').classList.toggle('is-empty', !hasVolt);
 
     const pct = b.battery != null && isFinite(b.battery) ? Math.round(b.battery) : null;
@@ -604,14 +614,21 @@
   function setCard(id, value, fmt) {
     const card = document.getElementById(id);
     const val = card.querySelector('.card__value');
+    // 保留单位后缀 <em class="u">（V / ℃ / °），只替换数值部分
+    const unit = val.querySelector('.u');
+    const unitHtml = unit ? unit.outerHTML : '';
     const empty = value == null || !isFinite(value);
     card.classList.toggle('is-empty', empty);
-    val.textContent = empty ? '--' : fmt(value);
+    val.innerHTML = (empty ? '--' : fmt(value)) + unitHtml;
   }
 
   function renderDevice() {
     const { conn } = app.state;
     els.devName.textContent = conn.device ? conn.device.name : '未连接';
+    // 顶部栏设备名同步（有设备显示设备名，否则显示品牌默认值）
+    if (els.headDevName) {
+      els.headDevName.textContent = conn.device ? conn.device.name : 'LvBu motor';
+    }
     const map = {
       idle: ['未连接', ''],
       requesting: ['选择中…', 'is-busy'],
