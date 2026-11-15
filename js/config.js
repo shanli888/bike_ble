@@ -52,7 +52,7 @@
     { key: 'exercise', label: '运动', icon: 'exercise', assist: 2 },
     { key: 'climbing', label: '爬坡', icon: 'climbing', assist: 3 },
     { key: 'leisure', label: '休闲', icon: 'leisure', assist: 0 },
-    { key: 'manual', label: '手动', icon: 'manual', assist: null }, // 手动模式用 percent
+    { key: 'manual', label: '手动', icon: 'manual', assist: 50 }, // 手动模式默认 50%
   ];
 
   /** 轮径（英寸）→ 周长（mm）常用规格 */

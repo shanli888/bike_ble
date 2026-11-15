@@ -284,9 +284,11 @@
 
   function bindAppEvents() {
     app.on('change', onAppChange);
-    // 有待发送的助力调整时，刷新提示行
+    // 闪控待发送提示 + 演示模式模拟信号刷新
     app.on('tick', () => {
       if (app.getRemoteState && app.getRemoteState().pending) renderAssist();
+      const sim = root.LVBU.sim;
+      if (sim && sim.running && app.state.conn.status !== 'ready') renderConn();
     });
     app.on('toast', (t) => toast(t.text, t.level));
     app.on('log', (entry) => appendLogLine(entry));
@@ -478,12 +480,18 @@
       : '未连接';
     els.btnPower.classList.toggle('is-on', ready);
 
-    // 信号：已连接绿色，未连接灰色
-    const rssi = conn.rssi;
+    // 信号：真实连接用实际 RSSI；演示模式用一个波动的模拟值
+    const isReal = conn.status === 'ready';
+    let rssi = conn.rssi;
+    if (!isReal && ready && demo) {
+      // 演示：-52 ~ -78 dBm 缓慢波动，让格数在 3~4 格间变化
+      const t = Date.now() / 4000;
+      rssi = Math.round(-64 + Math.sin(t) * 12 + Math.sin(t * 2.7) * 3);
+    }
     const level = rssi == null ? 0 : rssi > -60 ? 4 : rssi > -70 ? 3 : rssi > -80 ? 2 : rssi > -90 ? 1 : 0;
     $$('i', els.signalBars).forEach((bar, i) => bar.classList.toggle('on', i < level && ready));
     els.signalBars.dataset.level = String(level);
-    // 连接状态决定信号格颜色
+    // 连接状态决定信号格颜色（演示模式也算「已就绪」→ 绿色）
     const sigWrap = $('#sigWrap');
     if (sigWrap) sigWrap.classList.toggle('is-connected', ready);
     els.rssiText.textContent = ready ? (rssi == null ? '-- dBm' : `${rssi} dBm`) : '-- dBm';
