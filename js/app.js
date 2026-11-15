@@ -586,8 +586,12 @@
   async function onRemoteKey(name) {
     const live = state.conn.status === 'ready';
     const demo = !live && !!state.prefs.simulateWhenDisconnected;
+    log(
+      'info',
+      `[闪控] 按键 ${name} · 连接状态=${state.conn.status} · 演示开关=${state.prefs.simulateWhenDisconnected} · 判定=${live ? '真实' : demo ? '模拟' : '拒绝'}`
+    );
     if (!live && !demo) {
-      toast('请先连接助力控制器', 'error');
+      toast('请先连接助力控制器（或在设置中打开演示数据）', 'error');
       return;
     }
     const simulate = !live; // 演示模式：只提示，不发送
