@@ -315,10 +315,20 @@
     return true;
   }
 
-  /** 助力百分比可随时调整，只需已连接 */
+  /**
+   * 是否允许操作助力控件。
+   * 已连接 → true；演示模式（开关打开且未连接）→ 也可操作，但不会真正发送。
+   */
   function requireConnected() {
-    const sim = root.LVBU.sim;
-    return app.state.conn.status === 'ready' || (sim && sim.running);
+    const st = app.state;
+    if (st.conn.status === 'ready') return true;
+    if (st.prefs.simulateWhenDisconnected) return true;
+    return false;
+  }
+
+  /** 当前是否为纯演示（未连接但允许交互） */
+  function isDemoMode() {
+    return app.state.conn.status !== 'ready' && !!app.state.prefs.simulateWhenDisconnected;
   }
 
   /** 助力百分比有效范围 0~99（100% 由设备边界处理，不主动下发） */
@@ -512,9 +522,10 @@
 
   function renderAssist() {
     const { conn, draft, confirmed, prefs } = app.state;
-    const sim = root.LVBU.sim;
-    const demo = !!prefs.simulateWhenDisconnected && sim && sim.running;
-    const ready = conn.status === 'ready' || demo;
+    // 演示模式：开关打开且未连接时，控件照常可交互（仅本地生效，不发送）
+    const demo = !!prefs.simulateWhenDisconnected && conn.status !== 'ready';
+    const live = conn.status === 'ready';
+    const ready = live || demo;
 
     // 模式按钮
     $$('.mode', els.modeRow).forEach((btn) => {
@@ -547,12 +558,14 @@
       btn.disabled = !ready;
     });
 
-    // 提示行仅在闪控有状态时出现，平时隐藏
+    // 提示行
     let note = '';
     if (ready) {
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
-      if (app.getRemoteState) {
+      if (demo && !live) {
+        note = '演示模式 · 可自由操作，不会发送到设备';
+      } else if (app.getRemoteState) {
         const rs = app.getRemoteState();
         if (rs.stopped) {
           note = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;

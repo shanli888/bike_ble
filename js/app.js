@@ -361,14 +361,25 @@
 
   /** 立即下发当前草稿（模式 + 助力值），无需确认按钮 */
   async function applyAssistMode() {
-    if (!state.transport || state.transport.state.status !== 'ready') {
-      toast('请先连接设备', 'error');
-      return false;
-    }
     const target = {
       mode: state.draft.mode,
       value: Math.min(99, Math.max(0, Math.round(state.draft.value || 0))),
     };
+
+    // 演示模式：只更新本地状态，不发送任何蓝牙数据
+    if (!state.transport || state.transport.state.status !== 'ready') {
+      if (state.prefs.simulateWhenDisconnected) {
+        state.confirmed = { ...target };
+        state.mode = target.mode;
+        state.draft.dirty = false;
+        toast(`（演示）${modeLabel(target.mode)} ${target.value}%`, 'success');
+        changed();
+        return true;
+      }
+      toast('请先连接设备', 'error');
+      return false;
+    }
+
     try {
       // 模式变化时先发模式命令
       if (target.mode !== state.confirmed.mode) {
@@ -393,11 +404,23 @@
 
   /** 仅下发手动助力百分比（随时可用，不要求停车），范围 0~99 */
   async function applyAssist() {
+    const value = Math.min(99, Math.max(0, Math.round(state.draft.value || 0)));
+
+    // 演示模式：只更新本地状态，不发送
     if (!state.transport || state.transport.state.status !== 'ready') {
+      if (state.prefs.simulateWhenDisconnected) {
+        state.draft.value = value;
+        state.confirmed.value = value;
+        state.mode = state.draft.mode;
+        state.draft.dirty = false;
+        toast(`（演示）助力 ${value}%`, 'success');
+        changed();
+        return true;
+      }
       toast('请先连接设备', 'error');
       return false;
     }
-    const value = Math.min(99, Math.max(0, Math.round(state.draft.value || 0)));
+
     try {
       await send({ kind: 'percent', percent: value });
       state.draft.value = value;
