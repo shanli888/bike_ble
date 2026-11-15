@@ -855,33 +855,21 @@ body {
   background: var(--bg-top, var(--bg));
 }
 .appbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
-.brand-ico { color: var(--blue); display: inline-flex; flex: none; }
+.brand-ico { color: #5b6276; display: inline-flex; flex: none; transition: color .25s; }
 .brand-ico svg { width: 15px; height: 15px; }
+/* 已连接 / 演示：蓝色 */
+.brand-ico.is-active { color: var(--blue); }
 .dev-name {
-  font-size: 15px; font-weight: 600; color: #e9eefb;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e9eefb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .25s;
 }
-.conn-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  height: 21px; padding: 0 8px;
-  border-radius: 999px;
-  font-size: 11px; font-weight: 600;
-  color: var(--muted2);
-  background: rgba(255, 255, 255, .05);
-  border: 1px solid rgba(255, 255, 255, .09);
-  white-space: nowrap; flex: none;
-}
-.conn-badge__dot { width: 6px; height: 6px; border-radius: 50%; background: #5b6276; flex: none; }
-.conn-badge.is-connected {
-  color: var(--green);
-  background: rgba(61, 220, 140, .10);
-  border-color: rgba(61, 220, 140, .20);
-}
-.conn-badge.is-connected .conn-badge__dot {
-  background: var(--green);
-  box-shadow: 0 0 6px 1px rgba(61, 220, 140, .55);
-}
-.appbar-right { display: flex; align-items: center; gap: 12px; flex: none; }
+/* 未连接：文字弱化为灰色 */
+.dev-name.is-idle { color: var(--muted); font-weight: 500; }
 .sig { display: inline-flex; align-items: center; gap: 5px; }
 .sig .bars {
   display: inline-flex;

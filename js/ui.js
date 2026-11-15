@@ -74,8 +74,6 @@
   }
 
   function cacheEls() {
-    els.connBadge = $('#connBadge');
-    els.connBadgeText = $('#connBadgeText');
     els.signalBars = $('#signalBars');
     // 主速度：整数位 / 小数位分离（七段数码管）
     els.speedInt = $('#speedInt');
@@ -460,16 +458,33 @@
     const demo = !!app.state.prefs.simulateWhenDisconnected && root.LVBU.sim && root.LVBU.sim.running;
     const ready = conn.status === 'ready' || demo;
     const busy = conn.status === 'connecting' || conn.status === 'discovering' || conn.status === 'requesting';
-    els.connBadge.classList.toggle('is-connected', ready);
-    els.connBadgeText.textContent = ready
-      ? demo
-        ? '演示模式'
-        : '已连接'
-      : busy
-      ? '连接中'
-      : conn.status === 'disconnected' || conn.status === 'error'
-      ? '已断开'
-      : '未连接';
+
+    /* 顶部栏文字：
+     *   已连接 → 设备名（如 LvBu motor）
+     *   演示   → 「演示设备」
+     *   连接中 → 「连接中」
+     *   其它   → 「未连接」/「已断开」
+     */
+    let label;
+    if (conn.status === 'ready') {
+      label = (conn.device && conn.device.name) || 'LvBu motor';
+    } else if (demo) {
+      label = '演示设备';
+    } else if (busy) {
+      label = '连接中';
+    } else if (conn.status === 'disconnected' || conn.status === 'error') {
+      label = '已断开';
+    } else {
+      label = '未连接';
+    }
+    if (els.headDevName) {
+      els.headDevName.textContent = label;
+      // 未连接时文字弱化
+      els.headDevName.classList.toggle('is-idle', !ready);
+    }
+    // 蓝牙图标：未连接灰，连接/演示蓝
+    const btIcon = $('#btIcon');
+    if (btIcon) btIcon.classList.toggle('is-active', ready);
 
     // 信号：真实连接用实际 RSSI；演示模式用一个波动的模拟值
     const isReal = conn.status === 'ready';
