@@ -76,7 +76,6 @@
   function cacheEls() {
     els.connBadge = $('#connBadge');
     els.connBadgeText = $('#connBadgeText');
-    els.rssiText = $('#rssiText');
     els.signalBars = $('#signalBars');
     // 主速度：整数位 / 小数位分离（七段数码管）
     els.speedInt = $('#speedInt');
@@ -99,7 +98,6 @@
     els.btnMinus = $('#btnMinus');
     els.btnPlus = $('#btnPlus');
     els.toast = $('#toast');
-    els.btnPower = $('#btnPower');
     els.assistPct = $('#assistPct');
     els.headDevName = $('#devName');
     els.remoteChip = $('#remoteChip');
@@ -154,12 +152,6 @@
       headNameEl.addEventListener('click', () => app.go('device'));
       headNameEl.style.cursor = 'pointer';
     }
-
-    els.btnPower.addEventListener('click', () => {
-      const st = app.state.conn.status;
-      if (st === 'ready' || st === 'connecting' || st === 'discovering') app.disconnect();
-      else app.go('device');
-    });
 
     // 助力：点击模式按钮立即下发
     els.modeRow.addEventListener('click', async (e) => {
@@ -478,7 +470,6 @@
       : conn.status === 'disconnected' || conn.status === 'error'
       ? '已断开'
       : '未连接';
-    els.btnPower.classList.toggle('is-on', ready);
 
     // 信号：真实连接用实际 RSSI；演示模式用一个波动的模拟值
     const isReal = conn.status === 'ready';
@@ -494,7 +485,6 @@
     // 连接状态决定信号格颜色（演示模式也算「已就绪」→ 绿色）
     const sigWrap = $('#sigWrap');
     if (sigWrap) sigWrap.classList.toggle('is-connected', ready);
-    els.rssiText.textContent = ready ? (rssi == null ? '-- dBm' : `${rssi} dBm`) : '-- dBm';
   }
 
   /**

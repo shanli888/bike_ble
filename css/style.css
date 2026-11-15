@@ -854,8 +854,8 @@ body {
   border-bottom: 1px solid var(--line);
   background: var(--bg-top, var(--bg));
 }
-.appbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.brand-ico { color: var(--green); display: inline-flex; flex: none; }
+.appbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+.brand-ico { color: var(--blue); display: inline-flex; flex: none; }
 .brand-ico svg { width: 15px; height: 15px; }
 .dev-name {
   font-size: 15px; font-weight: 600; color: #e9eefb;
@@ -887,7 +887,7 @@ body {
   display: inline-flex;
   align-items: flex-end;
   gap: 2px;
-  height: 15px;
+  height: 14px;
 }
 .sig .bars i {
   width: 3px;
@@ -895,29 +895,14 @@ body {
   background: rgba(255, 255, 255, .14);
   transition: background .2s;
 }
-.sig .bars i:nth-child(1) { height: 5px; }
-.sig .bars i:nth-child(2) { height: 8px; }
-.sig .bars i:nth-child(3) { height: 11px; }
-.sig .bars i:nth-child(4) { height: 15px; }
+.sig .bars i:nth-child(1) { height: 4px; }
+.sig .bars i:nth-child(2) { height: 7px; }
+.sig .bars i:nth-child(3) { height: 10px; }
+.sig .bars i:nth-child(4) { height: 14px; }
 /* 未连接：灰色 */
 .sig .bars i.on { background: #7b859c; }
 /* 已连接：绿色 */
 .sig.is-connected .bars i.on { background: var(--green); }
-.sig__dbm { font-size: 11.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
-.power-btn {
-  width: 28px; height: 28px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, .05);
-  border: 1px solid rgba(255, 255, 255, .09);
-  color: var(--muted2);
-  transition: background .2s, color .2s, border-color .2s;
-}
-.power-btn svg { width: 17px; height: 17px; }
-.power-btn.is-on {
-  color: var(--green);
-  background: rgba(61, 220, 140, .09);
-  border-color: rgba(61, 220, 140, .28);
-}
 
 /* ---------------- 主速度区 ---------------- */
 .hero {
