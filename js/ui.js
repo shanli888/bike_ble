@@ -494,8 +494,14 @@
       const t = Date.now() / 4000;
       rssi = Math.round(-64 + Math.sin(t) * 12 + Math.sin(t * 2.7) * 3);
     }
-    const level = rssi == null ? 0 : rssi > -60 ? 4 : rssi > -70 ? 3 : rssi > -80 ? 2 : rssi > -90 ? 1 : 0;
-    $$('i', els.signalBars).forEach((bar, i) => bar.classList.toggle('on', i < level && ready));
+    // RSSI 分级；iOS 上往往读不到 RSSI（null），此时已连接就默认显示 3 格
+    let level;
+    if (rssi == null) {
+      level = ready ? 3 : 0;   // 已连接但无 RSSI → 假定中等信号
+    } else {
+      level = rssi > -60 ? 4 : rssi > -70 ? 3 : rssi > -80 ? 2 : rssi > -90 ? 1 : 0;
+    }
+    $$('i', els.signalBars).forEach((bar, i) => bar.classList.toggle('on', i < level));
     els.signalBars.dataset.level = String(level);
     // 连接状态决定信号格颜色（演示模式也算「已就绪」→ 绿色）
     const sigWrap = $('#sigWrap');
@@ -623,18 +629,23 @@
     els.note.classList.remove('is-warn');
   }
 
-  /* ---------------- 陀螺仪滑动中位数滤波 ---------------- */
-  const GYRO_WINDOW = 5;        // 保留最近 5 次读数
-  const GYRO_MAX_DELTA = 15;    // 与中位数偏差超过 15° 视为尖峰，直接丢弃
+  /* ---------------- 陀螺仪滤波 ----------------
+   * 设备 BD 字段偶尔返回异常大值（实测平路约 5°，颠簸时 raw 会飙到 1100+）。
+   * 策略：
+   *   1) 物理合法角度范围 [-90, 90]，超出直接忽略（通常是设备异常读数）
+   *   2) 合法值都进缓冲，用最近 N 次的中位数输出 —— 中位数天然抗偶发尖峰
+   *   3) 不做「绝对偏差丢弃」：那样一旦真实值跳变，缓冲会永久卡在旧值
+   */
+  const GYRO_WINDOW = 5;
+  const GYRO_VALID = 90;
   const gyroBuf = [];
 
   function pushGyroSample(v) {
     if (!isFinite(v)) return;
-    // 先与当前中位数比较，偏差过大则不入缓冲（避免尖峰污染）
-    const cur = median(gyroBuf);
-    if (cur != null && Math.abs(v - cur) > GYRO_MAX_DELTA) return;
+    // 物理合法性：超出 ±90° 视为无效读数，直接忽略
+    if (Math.abs(v) > GYRO_VALID) return;
     gyroBuf.push(v);
-    if (gyroBuf.length > GYRO_WINDOW) gyroBuf.shift();
+    while (gyroBuf.length > GYRO_WINDOW) gyroBuf.shift();
   }
 
   function median(arr) {
@@ -661,9 +672,9 @@
   function renderCards() {
     const b = app.state.bike;
 
-    // ===== 陀螺仪角度（带中位数滤波）=====
-    // 设备返回的 BD 值在颠簸瞬间会剧烈跳变（实测平路 raw≈52，颠簸 raw≈1119），
-    // 属于传感器受冲击的瞬时尖峰。这里用滑动中位数滤波，得到稳定的车身倾角。
+    // ===== 陀螺仪角度 =====
+    // 设备返回 BD 字段（角度，已由 adapter 除以 10）。
+    // 用滑动中位数平滑偶发尖峰，同时保留真实变化。
     const rawAngle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
     if (rawAngle != null) pushGyroSample(rawAngle);
     const angle = getFilteredGyro();
