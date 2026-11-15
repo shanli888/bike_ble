@@ -470,13 +470,23 @@
     els.rssiText.textContent = ready ? (rssi == null ? '-- dBm' : `${rssi} dBm`) : '-- dBm';
   }
 
-  /** 把数值拆成「整数位 / 小数位」两段，固定位数避免抖动 */
-  function splitNum(v, intDigits, fallback) {
+  /**
+   * 把数值拆成「整数位 / 小数位」两段。
+   * @param {number} v 数值
+   * @param {number} intDigits 整数最少位数（补零）
+   * @param {object} fallback 空值占位
+   * @param {number} maxInt 整数最大位数（超出则截断，默认 2）
+   */
+  function splitNum(v, intDigits, fallback, maxInt) {
     if (v == null || !isFinite(v)) return fallback;
-    const clamped = Math.max(0, Math.min(99.9, Number(v)));
+    const cap = Math.pow(10, maxInt || 2) - 0.1;
+    const clamped = Math.max(0, Math.min(cap, Number(v)));
     const s = clamped.toFixed(1);
     const [ip, fp] = s.split('.');
-    return { int: ip.padStart(intDigits, '0').slice(-intDigits), frac: fp };
+    // 不足补零；超出则保留末尾 maxInt 位
+    const want = Math.max(intDigits, maxInt || 2);
+    const padded = ip.padStart(intDigits, '0');
+    return { int: maxInt ? padded.slice(-maxInt) : padded, frac: fp };
   }
 
   function renderSpeed() {
@@ -487,10 +497,10 @@
     els.speedFrac.textContent = sp.frac;
     els.speedUnit.textContent = 'km/h';
 
-    // 副表：AVG / MAX 补零到 2 位，里程不补零
-    const avg = splitNum(b.avgSpeed, 2, { int: '00', frac: '0' });
-    const max = splitNum(b.maxSpeed, 2, { int: '00', frac: '0' });
-    const trip = splitNum(b.trip, 2, { int: '00', frac: '0' });
+    // 副表：AVG / MAX 补零到 2 位；里程允许 3 位整数
+    const avg = splitNum(b.avgSpeed, 2, { int: '00', frac: '0' }, 2);
+    const max = splitNum(b.maxSpeed, 2, { int: '00', frac: '0' }, 2);
+    const trip = splitNum(b.trip, 3, { int: '000', frac: '0' }, 3);
 
     els.statAvgInt.textContent = avg.int;
     els.statAvgFrac.textContent = avg.frac;

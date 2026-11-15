@@ -81,7 +81,10 @@
     const b = app.state.bike;
     Object.assign(b, {
       speed: 18.6,
-      // avgSpeed / maxSpeed / trip 由 app 的统计模块实时累加，这里不预设
+      // 副表演示值（真实连接时由统计模块按实际速度覆盖）
+      avgSpeed: 15.2,
+      maxSpeed: 24.8,
+      trip: 567.9,        // 用于验证两位数里程的排版
       odo: 1284.8,
       battery: 90,        // 电量百分比
       voltage: 40.1,      // 电压
