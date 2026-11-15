@@ -283,9 +283,9 @@
 
   function bindAppEvents() {
     app.on('change', onAppChange);
-    // 闪控冻结倒计时需要持续刷新
+    // 有待发送的助力调整时，刷新提示行
     app.on('tick', () => {
-      if (app.getRemoteState && app.getRemoteState().frozenMs > 0) renderAssist();
+      if (app.getRemoteState && app.getRemoteState().pending) renderAssist();
     });
     app.on('toast', (t) => toast(t.text, t.level));
     app.on('log', (entry) => appendLogLine(entry));
@@ -348,7 +348,9 @@
     if (next === cur) return;
     if (!requireConnected()) return;
     app.setDraft({ value: next, mode: 'manual' });
-    await app.applyAssist(); // 立即下发
+    // 延迟 1 秒下发：连续点击只发送最终值
+    app.scheduleAssistSend('percent');
+    els.assistValue.textContent = String(next);
   }
 
   function wireSlider() {
@@ -360,7 +362,7 @@
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
     });
-    els.slider.addEventListener('change', async () => {
+    els.slider.addEventListener('change', () => {
       const v = Math.min(PCT_MAX, Number(els.slider.value));
       els.slider.dataset.touched = '0';
       if (v === startValue) return;
@@ -370,7 +372,8 @@
         return;
       }
       app.setDraft({ value: v, mode: 'manual' });
-      await app.applyAssist(); // 松手立即下发
+      // 松手后延迟 1 秒下发（连续微调只发最终值）
+      app.scheduleAssistSend('percent');
     });
     applySliderStep();
   }
@@ -577,8 +580,8 @@
         const rs = app.getRemoteState();
         if (rs.stopped) {
           note = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
-        } else if (rs.frozenMs > 0) {
-          note = `闪控操作冻结中 · ${Math.ceil(rs.frozenMs / 1000)} 秒后可再按`;
+        } else if (rs.pending) {
+          note = '调整中 · 松开 1 秒后下发到设备';
         }
       }
     } else {

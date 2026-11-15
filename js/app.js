@@ -148,6 +148,7 @@
         state.conn.rssi = null;
         ride.lastSampleAt = 0; // 断开后重置采样基准，重连后重新计时
         stopPolling();
+        stopBatteryRecovery();
       }
       changed();
     });
@@ -207,6 +208,52 @@
     }
     // 初始化“已确认状态”为本机当前值（协议未回读前）
     state.confirmed.value = state.draft.value = state.bike.assistLevel || 0;
+
+    // 设备刚连上时可能还在自检，读不到电量 → 每 10 秒重发一次查询
+    startBatteryRecovery();
+  }
+
+  /* ---------------- 电量恢复（设备自检期间重复查询） ---------------- */
+  const BATTERY_RETRY_MS = 10000;
+  let batteryRetryTimer = null;
+  let batteryRetryCount = 0;
+  const BATTERY_RETRY_MAX = 12; // 最多重试 2 分钟
+
+  function startBatteryRecovery() {
+    stopBatteryRecovery();
+    batteryRetryCount = 0;
+    // 已有电量就不用重试
+    if (state.bike.battery != null) return;
+
+    batteryRetryTimer = setInterval(async () => {
+      if (state.conn.status !== 'ready') {
+        stopBatteryRecovery();
+        return;
+      }
+      // 已经读到电量 → 停止重试
+      if (state.bike.battery != null) {
+        stopBatteryRecovery();
+        return;
+      }
+      if (++batteryRetryCount > BATTERY_RETRY_MAX) {
+        stopBatteryRecovery();
+        log('warn', '连续 2 分钟未读到电量，停止重试');
+        return;
+      }
+      log('info', `未读到电量，第 ${batteryRetryCount} 次重发查询…`);
+      try {
+        // 重发完整初始化序列（电压 + 速度 + 温度 + 陀螺仪）
+        for (const step of adapter.initSequence(state.prefs)) {
+          await util.sleep(step.delay);
+          await send(step.command, { silent: true }).catch(() => {});
+        }
+      } catch (_) {}
+    }, BATTERY_RETRY_MS);
+  }
+
+  function stopBatteryRecovery() {
+    if (batteryRetryTimer) clearInterval(batteryRetryTimer);
+    batteryRetryTimer = null;
   }
 
   /* ---------------- 定时轮询（电量/温度/速度/陀螺仪） ---------------- */
@@ -402,6 +449,35 @@
     }
   }
 
+  /* ---------------- 助力下发的防抖队列 ---------------- */
+  // UI 立即响应，真正发送延迟 SEND_DELAY_MS；期间连续操作只发最终值。
+  const SEND_DELAY_MS = 1000;
+  let sendTimer = null;
+  let pendingKind = null; // 'percent' | 'mode'
+
+  /**
+   * 延迟下发助力值。连续调用会重置计时器，只在停止操作 1 秒后发一次。
+   * @param {'percent'|'mode'} kind 下发类型：仅百分比 / 模式+值
+   */
+  function scheduleAssistSend(kind) {
+    pendingKind = kind || 'percent';
+    if (sendTimer) clearTimeout(sendTimer);
+    sendTimer = setTimeout(() => {
+      sendTimer = null;
+      const k = pendingKind;
+      pendingKind = null;
+      if (k === 'mode') applyAssistMode();
+      else applyAssist();
+    }, SEND_DELAY_MS);
+  }
+
+  /** 立即下发（跳过延迟），用于停止助力等紧急操作 */
+  function cancelScheduledSend() {
+    if (sendTimer) clearTimeout(sendTimer);
+    sendTimer = null;
+    pendingKind = null;
+  }
+
   /** 仅下发手动助力百分比（随时可用，不要求停车），范围 0~99 */
   async function applyAssist() {
     const value = Math.min(99, Math.max(0, Math.round(state.draft.value || 0)));
@@ -502,15 +578,9 @@
 
   /* 闪控按键状态 */
   const remoteCtlState = {
-    frozenUntil: 0,     // 冻结截止时间戳（ms），期间忽略按键
     stopped: false,     // 是否处于「停止助力」状态
     savedPower: null,   // 停止前记录的助力百分比，用于恢复
   };
-  const REMOTE_FREEZE_MS = 5000; // 按键后冻结 5 秒
-
-  function remoteFrozen() {
-    return Date.now() < remoteCtlState.frozenUntil;
-  }
 
   /** 闪控按键 → 调整助力 / 停止 / 恢复 */
   async function onRemoteKey(name) {
@@ -519,20 +589,11 @@
       return;
     }
 
-    // 冻结期内忽略（防止误触连发）
-    if (remoteFrozen()) {
-      const left = Math.ceil((remoteCtlState.frozenUntil - Date.now()) / 1000);
-      toast(`操作已冻结，请 ${left} 秒后再按`);
-      return;
-    }
-
-    // ---- 停止键：停止助力 ----
+    // ---- 停止键：停止助力（立即发送，安全操作）----
     if (name === 'home') {
       const cur = state.draft.value || 0;
-      if (cur <= 0 && remoteCtlState.stopped) {
-        return; // 已经是停止状态
-      }
-      // 记录当前助力值用于恢复
+      if (cur <= 0 && remoteCtlState.stopped) return;
+      cancelScheduledSend(); // 取消尚未发出的调整
       remoteCtlState.savedPower = cur;
       remoteCtlState.stopped = true;
       state.draft.value = 0;
@@ -540,10 +601,7 @@
       state.draft.dirty = true;
       changed();
       const ok = await applyAssist();
-      if (ok) {
-        remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
-        toast(`已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
-      }
+      if (ok) toast(`已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
       return;
     }
 
@@ -555,29 +613,18 @@
       const saved = remoteCtlState.savedPower;
       remoteCtlState.stopped = false;
       remoteCtlState.savedPower = null;
-      if (saved != null && saved > 0) {
-        state.draft.value = saved;
-        state.draft.mode = 'manual';
-        state.draft.dirty = true;
-        changed();
-        const ok = await applyAssist();
-        if (ok) {
-          remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
-          toast(`已恢复助力 ${saved}%`, 'success');
-        }
-      } else {
-        // 没有记录值，按正常步进处理
-        const step = state.prefs.sliderStep || 5;
-        const next = name === 'up' ? step : 0;
-        state.draft.value = next;
-        changed();
-        const ok = await applyAssist();
-        if (ok) remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
-      }
+      const restore = saved != null && saved > 0 ? saved : name === 'up' ? state.prefs.sliderStep || 5 : 0;
+      state.draft.value = restore;
+      state.draft.mode = 'manual';
+      state.draft.dirty = true;
+      changed();
+      // 恢复也走延迟队列（可继续用按键微调）
+      scheduleAssistSend('percent');
+      if (saved != null && saved > 0) toast(`恢复助力 ${saved}%`, 'success');
       return;
     }
 
-    // ---- 正常调整 ----
+    // ---- 正常调整：可连续按键，延迟 1 秒后只发最终值 ----
     const step = state.prefs.sliderStep || 5;
     const cur = state.draft.value || 0;
     const next = Math.max(0, Math.min(99, cur + (name === 'up' ? step : -step)));
@@ -589,11 +636,7 @@
     state.draft.mode = 'manual';
     state.draft.dirty = true;
     changed();
-    const ok = await applyAssist();
-    if (ok) {
-      remoteCtlState.frozenUntil = Date.now() + REMOTE_FREEZE_MS;
-      toast(`助力 ${next}%（${Math.ceil(REMOTE_FREEZE_MS / 1000)} 秒内不再响应）`, 'success');
-    }
+    scheduleAssistSend('percent');
   }
 
   async function connectRemote() {
@@ -725,6 +768,8 @@
     confirmParked,
     applyAssist,
     applyAssistMode,
+    scheduleAssistSend,
+    cancelScheduledSend,
     stopAssist,
     parkedNow,
     setWheel,
@@ -745,12 +790,12 @@
     remoteSendRaw,
     remoteForceNotify,
     remoteInspect,
-    /** 闪控状态（供 UI 显示冻结/停止） */
+    /** 闪控状态（供 UI 显示停止/待发送） */
     getRemoteState() {
       return {
-        frozenMs: Math.max(0, remoteCtlState.frozenUntil - Date.now()),
         stopped: remoteCtlState.stopped,
         savedPower: remoteCtlState.savedPower,
+        pending: !!sendTimer, // 是否有待发送的调整
       };
     },
     displaySpeed,
