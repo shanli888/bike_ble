@@ -50,21 +50,18 @@
       app.attachRemote(root.LVBU.remote.createRemote());
     }
 
-    // 演示数据：开关开启且未连接时，填充固定示例数据
+    // 演示数据：开关开启且未连接时，启动循环演示（电量/温度/速度等自动变化）
     if (root.LVBU.sim) {
-      let demoSeeded = false;
-      const applyDemo = () => {
+      const syncDemo = () => {
         const on = app.state.prefs.simulateWhenDisconnected && app.state.conn.status !== 'ready';
-        if (on && !demoSeeded) {
-          root.LVBU.sim.seed(); // 填充固定示例值
-          demoSeeded = true;
-          app._internal.changed();
+        if (on && !root.LVBU.sim.running) {
+          root.LVBU.sim.start(); // 启动动态循环演示
+        } else if (!on && root.LVBU.sim.running) {
+          root.LVBU.sim.stop(); // 已连接或关闭开关 → 停止演示
         }
-        if (!on) demoSeeded = false; // 连接或关闭开关后，允许下次重新填充
-        if (root.LVBU.sim.running) root.LVBU.sim.stop(); // 不跑动态模拟
       };
-      applyDemo();
-      stickDemo = setInterval(applyDemo, 1500);
+      syncDemo();
+      stickDemo = setInterval(syncDemo, 1000);
     }
 
     wireSlider();

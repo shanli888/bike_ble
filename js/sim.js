@@ -43,35 +43,60 @@
     const b = s.bike;
     script.t += dt;
 
-    // 速度：围绕目标值做平滑逼近 + 小抖动
-    const wobble = Math.sin(script.t * 0.7) * 0.4 + Math.sin(script.t * 2.3) * 0.15;
-    const target = (s.confirmed.value || 0) > 0 ? 12 + (s.confirmed.value || 0) * 0.12 : 0;
-    const cur = b.speed || 0;
-    const next = Math.max(0, cur + (target - cur) * Math.min(1, dt * 0.8) + wobble * dt * 1.5);
-    // 交给 app 的统计模块统一计算里程/平均/最高速度
-    app.markSpeedSample(Math.round(next * 10) / 10);
-    b.odo = 1284.6 + (b.trip || 0);
+    /* ---------- 循环演示 ----------
+     * 各指标按不同周期在完整取值区间内往返扫描，
+     * 确保每个配色档位（电量 4 档 / 温度 3 档）都能被看到。
+     * 周期：速度 20s，电量 45s，温度 30s，里程持续累加。
+     */
 
-    // 电量缓慢下降，温度/坡度缓慢变化
-    if (b.battery != null) b.battery = Math.max(0, Math.round((b.battery - next * dt * 0.02) * 10) / 10);
-    if (script.t % 3 < dt) {
-      b.controllerTemp = Math.round(rand(20, 26) * 10) / 10;
-      b.motorTemp = b.controllerTemp + rand(1, 3);
-      b.gyro = Math.round(rand(0.5, 3) * 10) / 10; // 陀螺仪角度 0.5~3°
-      b.voltage = Math.round((37.6 + rand(-0.3, 0.3)) * 10) / 10;
-    }
+    // 速度：3.0 ~ 42.5 km/h 三角波（20 秒一往复）
+    const speedPhase = (script.t % 20) / 20;          // 0..1
+    const speedTri = speedPhase < 0.5 ? speedPhase * 2 : (1 - speedPhase) * 2; // 0..1..0
+    const speed = 3 + speedTri * 39.5;
+    b.speed = Math.round(speed * 10) / 10;
 
-    // 助力功率（仅演示显示，不依赖字段）
+    // 平均速度：缓慢爬升后回落（0 ~ 30）
+    const avgTri = ((script.t % 60) / 60);
+    const avgWave = avgTri < 0.5 ? avgTri * 2 : (1 - avgTri) * 2;
+    b.avgSpeed = Math.round(avgWave * 30 * 10) / 10;
+
+    // 最高速度：阶梯式增长，循环重置
+    const maxCycle = Math.floor(script.t / 12) % 6;   // 0..5
+    b.maxSpeed = Math.round((18 + maxCycle * 6.4) * 10) / 10;
+
+    // 里程：持续累加，到 999.9 后回绕（验证 3 位整数排版）
+    script.odo = (script.odo || 0) + (speed * dt) / 3600;
+    if (script.odo > 999.9) script.odo = 0;
+    b.trip = Math.round(script.odo * 10) / 10;
+    b.odo = Math.round((1284.6 + script.odo) * 10) / 10;
+
+    // 电量：0 ~ 100 往返扫描（45 秒），覆盖绿/蓝/橙/红四档
+    const battPhase = (script.t % 45) / 45;
+    const battTri = battPhase < 0.5 ? battPhase * 2 : (1 - battPhase) * 2;
+    b.battery = Math.round(battTri * 100);
+    // 电压与电量联动（10S 锂电 30V~42V）
+    b.voltage = Math.round((30 + battTri * 12) * 10) / 10;
+
+    // 温度：5 ~ 65℃ 往返扫描（30 秒），覆盖绿/黄/红三档
+    const tempPhase = (script.t % 30) / 30;
+    const tempTri = tempPhase < 0.5 ? tempPhase * 2 : (1 - tempPhase) * 2;
+    b.controllerTemp = Math.round((5 + tempTri * 60) * 10) / 10;
+    b.motorTemp = Math.round((b.controllerTemp + rand(1, 3)) * 10) / 10;
+
+    // 陀螺仪：-3° ~ 3° 缓慢摆动
+    b.gyro = Math.round(Math.sin(script.t / 4) * 3 * 10) / 10;
+
+    // 助力功率（仅演示显示）
     if ((s.confirmed.value || 0) > 0) {
       const base = (s.confirmed.value || 0) * 2.2;
       b.assistPower = Math.round(base + Math.sin(script.t * 1.7) * 6 + rand(-3, 3));
       b.motorPower = Math.round(b.assistPower * rand(1.6, 2.1));
+      b.cadence = Math.round(52 + Math.sin(script.t / 3) * 8);
     } else {
       b.assistPower = 0;
       b.motorPower = 0;
+      b.cadence = 0;
     }
-
-    b.cadence = (s.confirmed.value || 0) > 0 ? Math.round(52 + Math.sin(script.t / 3) * 8) : 0;
 
     app._internal.changed();
   }
