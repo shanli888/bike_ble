@@ -584,10 +584,13 @@
 
   /** 闪控按键 → 调整助力 / 停止 / 恢复 */
   async function onRemoteKey(name) {
-    if (state.conn.status !== 'ready') {
+    const live = state.conn.status === 'ready';
+    const demo = !live && !!state.prefs.simulateWhenDisconnected;
+    if (!live && !demo) {
       toast('请先连接助力控制器', 'error');
       return;
     }
+    const simulate = !live; // 演示模式：只提示，不发送
 
     // ---- 停止键：停止助力（立即发送，安全操作）----
     if (name === 'home') {
@@ -600,6 +603,10 @@
       state.draft.mode = 'manual';
       state.draft.dirty = true;
       changed();
+      if (simulate) {
+        toast(`【模拟】已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
+        return;
+      }
       const ok = await applyAssist();
       if (ok) toast(`已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
       return;
@@ -618,6 +625,10 @@
       state.draft.mode = 'manual';
       state.draft.dirty = true;
       changed();
+      if (simulate) {
+        toast(`【模拟】恢复助力 ${restore}%（未发送到设备）`, 'success');
+        return;
+      }
       // 恢复也走延迟队列（可继续用按键微调）
       scheduleAssistSend('percent');
       if (saved != null && saved > 0) toast(`恢复助力 ${saved}%`, 'success');
@@ -636,6 +647,11 @@
     state.draft.mode = 'manual';
     state.draft.dirty = true;
     changed();
+
+    if (simulate) {
+      toast(`【模拟】助力 ${next}%（未发送到设备）`, 'success');
+      return;
+    }
     scheduleAssistSend('percent');
   }
 

@@ -574,15 +574,14 @@
     if (ready) {
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
-      if (demo && !live) {
-        note = '演示模式 · 可自由操作，不会发送到设备';
-      } else if (app.getRemoteState) {
-        const rs = app.getRemoteState();
-        if (rs.stopped) {
-          note = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
-        } else if (rs.pending) {
-          note = '调整中 · 松开 1 秒后下发到设备';
-        }
+      // 闪控停止状态优先展示
+      const rs = app.getRemoteState ? app.getRemoteState() : null;
+      if (rs && rs.stopped) {
+        note = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
+      } else if (demo && !live) {
+        note = '演示模式 · 可操作也可连闪控，只是不发送到设备';
+      } else if (rs && rs.pending) {
+        note = '调整中 · 松开 1 秒后下发到设备';
       }
     } else {
       els.panel.classList.add('is-locked');
