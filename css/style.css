@@ -948,12 +948,19 @@ body {
   align-self: flex-end;
   margin-bottom: 0;
 }
-.speed-row .unit {
-  font-size: 15px; font-weight: 600; color: var(--muted2);
+/* km/h：绝对定位于小数位正上方（规格 §2.3） */
+.seg-frac { position: relative; }
+.seg-frac .unit {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted2);
   letter-spacing: 1px;
-  align-self: flex-start;
-  margin-left: 8px;
-  margin-top: 12px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* ---------------- 副表 AVG / MAX / km ---------------- */
