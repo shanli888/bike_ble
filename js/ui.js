@@ -472,11 +472,14 @@
       : '未连接';
     els.btnPower.classList.toggle('is-on', ready);
 
-    // 信号：iOS 无 RSSI 通道时显示全部熄灭
+    // 信号：已连接绿色，未连接灰色
     const rssi = conn.rssi;
     const level = rssi == null ? 0 : rssi > -60 ? 4 : rssi > -70 ? 3 : rssi > -80 ? 2 : rssi > -90 ? 1 : 0;
     $$('i', els.signalBars).forEach((bar, i) => bar.classList.toggle('on', i < level && ready));
     els.signalBars.dataset.level = String(level);
+    // 连接状态决定信号格颜色
+    const sigWrap = $('#sigWrap');
+    if (sigWrap) sigWrap.classList.toggle('is-connected', ready);
     els.rssiText.textContent = ready ? (rssi == null ? '-- dBm' : `${rssi} dBm`) : '-- dBm';
   }
 
