@@ -605,7 +605,8 @@
     const rawAngle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
     if (rawAngle != null) pushGyroSample(rawAngle);
     const angle = getFilteredGyro();
-    setCard('cardGyro', angle, (v) => `${util.fixed(v, 1)}°`);
+    // 单位由 HTML 的 <em class="u"> 提供，这里只输出数值
+    setCard('cardGyro', angle, (v) => util.fixed(v, 1));
     // 进度条：角度绝对值 0~90° 映射到 10 格
     renderBars('slopeGrid', angle == null ? null : util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
 

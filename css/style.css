@@ -920,7 +920,7 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 0;
+  gap: 10px;
 }
 /* 七段槽位：ghost 底纹锁位宽 + on 叠加 */
 .seg-slot { position: relative; display: inline-flex; }
@@ -948,11 +948,11 @@ body {
   align-self: flex-end;
   margin-bottom: 0;
 }
-/* km/h：绝对定位于小数位正上方（规格 §2.3） */
+/* km/h：绝对定位于小数位正上方，留较大间距 */
 .seg-frac { position: relative; }
 .seg-frac .unit {
   position: absolute;
-  bottom: calc(100% + 9px);
+  bottom: calc(100% + 22px);
   left: 50%;
   transform: translateX(-50%);
   font-size: 15px;
