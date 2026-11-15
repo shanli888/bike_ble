@@ -518,9 +518,14 @@
     els.statMaxFrac.textContent = max.frac;
     els.statTripInt.textContent = trip.int;
     els.statTripFrac.textContent = trip.frac;
-    // ghost 底纹同步位数，避免占位与实际不一致
-    const tripGhost = els.statTripInt.parentElement.querySelector('.ghost');
-    if (tripGhost) tripGhost.textContent = tripDigits === 3 ? '888' : '88';
+
+    // ghost 底纹同步位数：显式设置文本（2 位 <100，3 位 ≥100）
+    const tripBox = els.statTripInt.closest('.s-int');
+    const tripGhost = tripBox ? tripBox.querySelector('.ghost') : null;
+    if (tripGhost) {
+      const want = tripDigits === 3 ? '888' : '88';
+      if (tripGhost.textContent !== want) tripGhost.textContent = want;
+    }
   }
 
   function renderAssist() {
