@@ -13,6 +13,8 @@
     level: 30,
     running: false,
     timer: null,
+    raf: null,
+    lastTick: 0,
     t: 0,
   };
 
@@ -23,19 +25,47 @@
   function start() {
     if (script.timer) return;
     script.running = true;
-    let last = performance.now();
-    script.timer = setInterval(() => {
-      const now = performance.now();
-      const dt = Math.min(1, (now - last) / 1000);
-      last = now;
-      step(dt);
-    }, 400);
+    script.debug = true; // 演示期间在标题栏显示 tick 计数，便于排查
+    script.startedAt = Date.now();
+    script.lastTick = Date.now();
+    // 用 requestAnimationFrame + setInterval 双保险：
+    // 移动端切后台时 rAF 会暂停，setInterval 可能被节流，任一恢复即可继续
+    script.timer = setInterval(tick, 400);
+    if (typeof requestAnimationFrame === 'function') {
+      const raf = () => {
+        if (!script.running) return;
+        tick();
+        script.raf = requestAnimationFrame(raf);
+      };
+      script.raf = requestAnimationFrame(raf);
+    }
+  }
+
+  /** 单次推进：基于真实时间差，保证手机/电脑进度一致 */
+  function tick() {
+    if (!script.running) return;
+    const now = Date.now();
+    const elapsed = now - script.lastTick;
+    // 双重定时器会重复触发，这里限制最小间隔 300ms
+    if (elapsed < 300) return;
+    const dt = Math.min(2, elapsed / 1000);
+    script.lastTick = now;
+    script.ticks = (script.ticks || 0) + 1;
+    step(dt);
+    // 诊断：标签页标题显示 tick 计数（便于确认循环是否在跑）
+    if (script.debug) {
+      document.title = `[${script.ticks}] ${Math.round(script.t)}s`;
+    }
   }
 
   function stop() {
     script.running = false;
     if (script.timer) clearInterval(script.timer);
     script.timer = null;
+    if (script.raf && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(script.raf);
+    }
+    script.raf = null;
   }
 
   function step(dt) {

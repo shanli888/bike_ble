@@ -504,10 +504,13 @@
     els.speedFrac.textContent = sp.frac;
     els.speedUnit.textContent = 'km/h';
 
-    // 副表：AVG / MAX 补零到 2 位；里程允许 3 位整数
+    // 副表：AVG / MAX 补零到 2 位
     const avg = splitNum(b.avgSpeed, 2, { int: '00', frac: '0' }, 2);
     const max = splitNum(b.maxSpeed, 2, { int: '00', frac: '0' }, 2);
-    const trip = splitNum(b.trip, 3, { int: '000', frac: '0' }, 3);
+    // 里程：<100 补 1 个 0（2 位）；≥100 显示 3 位
+    const tripNum = b.trip != null && isFinite(b.trip) ? Math.max(0, b.trip) : null;
+    const tripDigits = tripNum == null ? 2 : tripNum >= 100 ? 3 : 2;
+    const trip = splitNum(tripNum, tripDigits, { int: '00', frac: '0' }, 3);
 
     els.statAvgInt.textContent = avg.int;
     els.statAvgFrac.textContent = avg.frac;
@@ -515,6 +518,9 @@
     els.statMaxFrac.textContent = max.frac;
     els.statTripInt.textContent = trip.int;
     els.statTripFrac.textContent = trip.frac;
+    // ghost 底纹同步位数，避免占位与实际不一致
+    const tripGhost = els.statTripInt.parentElement.querySelector('.ghost');
+    if (tripGhost) tripGhost.textContent = tripDigits === 3 ? '888' : '88';
   }
 
   function renderAssist() {
