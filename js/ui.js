@@ -100,6 +100,7 @@
     els.btnPlus = $('#btnPlus');
     els.toast = $('#toast');
     els.btnPower = $('#btnPower');
+    els.assistPct = $('#assistPct');
     els.headDevName = $('#devName');
     els.remoteChip = $('#remoteChip');
     
@@ -351,6 +352,7 @@
     // 延迟 1 秒下发：连续点击只发送最终值
     app.scheduleAssistSend('percent');
     els.assistValue.textContent = String(next);
+    if (els.assistPct) els.assistPct.textContent = `${next}%`;
   }
 
   function wireSlider() {
@@ -361,6 +363,10 @@
     });
     els.slider.addEventListener('input', () => {
       els.assistValue.textContent = els.slider.value;
+      // 拖动时标题后的百分比同步跳动
+      if (els.assistPct && !els.assistPct.hidden) {
+        els.assistPct.textContent = `${els.slider.value}%`;
+      }
     });
     els.slider.addEventListener('change', () => {
       const v = Math.min(PCT_MAX, Number(els.slider.value));
@@ -559,6 +565,13 @@
     const manualWrap = document.getElementById('manualSliderWrap');
     if (levelsWrap) levelsWrap.style.display = isManual ? 'none' : 'flex';
     if (manualWrap) manualWrap.style.display = isManual ? 'grid' : 'none';
+
+    // 标题后的百分比：仅手动模式显示（含演示模式）
+    if (els.assistPct) {
+      const shown = els.slider.dataset.touched === '1' ? els.slider.value : String(draft.value);
+      els.assistPct.textContent = `${shown}%`;
+      els.assistPct.hidden = !isManual || !ready;
+    }
 
     // 未连接时禁用所有助力控件；连接后随时可用（无停车限制）
     els.slider.disabled = !ready;

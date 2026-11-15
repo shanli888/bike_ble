@@ -1057,6 +1057,19 @@ body {
 .panel__title b { font-size: 16px; font-weight: 700; color: var(--txt); }
 .panel__title .i svg { width: 19px; height: 19px; }
 
+/* 标题后的助力百分比（仅手动模式显示） */
+.panel__pct {
+  font-style: normal;
+  font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--orange);
+  margin-left: 2px;
+  transition: color .2s;
+}
+.panel__pct[hidden] { display: none; }
+
 .remote-chip { color: var(--muted2); }
 .remote-chip__icon svg { width: 18px; height: 18px; }
 .remote-chip.is-ready { color: var(--green); }
