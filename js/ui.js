@@ -817,7 +817,7 @@
     renderRemote();
   }
 
-  /** 首页助力面板里的闪控状态图标（绿=已连接，灰=未连接） */
+  /** 首页顶部栏的闪控状态图标（绿=已连接，灰=未连接） */
   function renderRemoteChip() {
     if (!els.remoteChip) return;
     const r = (app.state.remote) || { status: 'idle' };
@@ -829,7 +829,18 @@
       disconnected: ['已断开', ''],
       error: ['错误', ''],
     };
-    const [label, cls] = map[r.status] || map.idle;
+
+    // 演示模式：模拟闪控已连接，便于查看连接态样式
+    const demo =
+      !!app.state.prefs.simulateWhenDisconnected &&
+      root.LVBU.sim &&
+      root.LVBU.sim.running &&
+      r.status !== 'ready';
+
+    const [label, cls] = demo
+      ? ['已连接（演示）', 'is-ready is-demo']
+      : map[r.status] || map.idle;
+
     els.remoteChip.className = 'remote-chip ' + cls;
     // 无文字，仅通过 title/aria 提供给读屏与长按提示
     els.remoteChip.title = 'BR80 闪控' + label;

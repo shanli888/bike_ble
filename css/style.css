@@ -1029,10 +1029,16 @@ body {
   color: #8b93a1;
   transition: color .25s ease;
 }
-.remote-chip__icon svg { width: 26px; height: 26px; display: block; }
+.remote-chip__icon svg { width: 21px; height: 21px; display: block; }
 /* 已连接：绿（设计稿 #22C55E） */
 .remote-chip.is-ready { color: #22c55e; }
 .remote-chip.is-busy { color: var(--amber); }
+/* 演示态：绿色 + 轻微呼吸，提示这不是真实连接 */
+.remote-chip.is-demo { animation: remoteDemo 2.2s ease-in-out infinite; }
+@keyframes remoteDemo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
 
 /* 模式按钮行：图标在上、文字在下 */
 .modes { display: flex; gap: 7px; margin-top: 15px; }
