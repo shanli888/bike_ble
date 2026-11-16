@@ -124,7 +124,7 @@
   /* ======================= 模式行 ======================= */
   function buildModeRow() {
     els.modeRow.innerHTML = config.RIDE_MODES.map(
-      (m) => `<button class="mode" type="button" data-mode="${m.key}" role="radio" aria-checked="false">
+      (m, i) => `<button class="mode" type="button" data-mode="${m.key}" data-index="${i}" role="radio" aria-checked="false">
         <span class="i" data-icon="${m.icon}" data-size="17"></span><span>${m.label}</span>
       </button>`
     ).join('');
@@ -149,6 +149,24 @@
       headNameEl.style.cursor = 'pointer';
     }
 
+    /* ---- 模式悬浮菜单 ---- */
+    const openModeMenu = (open) => {
+      const menu = $('#modeMenu');
+      const chip = $('#modeChip');
+      if (!menu) return;
+      menu.hidden = !open;
+      if (chip) chip.setAttribute('aria-expanded', String(open));
+    };
+    $('#modeChip').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = $('#modeMenu');
+      openModeMenu(!!menu && menu.hidden);
+    });
+    $('#modeMenuBackdrop').addEventListener('click', () => openModeMenu(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') openModeMenu(false);
+    });
+
     // 助力：点击模式按钮立即下发
     els.modeRow.addEventListener('click', async (e) => {
       const btn = e.target.closest('.mode');
@@ -162,6 +180,7 @@
       const draft = { mode: key };
       if (def && def.assist != null) draft.value = def.assist;
       app.setDraft(draft);
+      openModeMenu(false); // 选中后收起菜单
       await app.applyAssistMode();
     });
 
@@ -585,6 +604,16 @@
       btn.classList.toggle('is-draft', draft.mode === key && confirmed.mode !== key);
       btn.setAttribute('aria-checked', String(draft.mode === key));
     });
+
+    // 常驻模式标签：显示当前模式名称与图标
+    const curMode = config.RIDE_MODES.find((m) => m.key === draft.mode) || config.RIDE_MODES[0];
+    const chipText = $('#modeChipText');
+    const chipIcon = $('#modeChip .mode-chip__icon');
+    if (chipText) chipText.textContent = curMode.label;
+    if (chipIcon) {
+      const svg = root.LVBU.icons.svg(curMode.icon, { size: 14 });
+      if (svg) chipIcon.innerHTML = svg;
+    }
 
     // 滑杆：用户正在拖动时不覆盖
     if (els.slider.dataset.touched !== '1') els.slider.value = String(draft.value);
