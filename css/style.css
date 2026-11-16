@@ -253,19 +253,7 @@ body {
 .panel__title b { font-size: 19px; font-weight: 600; white-space: nowrap; }
 .panel__title em { font-style: normal; font-size: 14px; color: var(--amber); white-space: nowrap; }
 
-/* 标题后的实时助力百分比 */
-.panel__pct {
-  font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
-  font-size: 21px;
-  font-weight: 700;
-  color: var(--amber-hi);
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  transition: color 0.2s;
-}
-.panel__pct.is-off { color: #5b6276; }
-
-/* 闪控连接状态：纯图标（无边框、靠右），连上绿色，未连灰色 */
+/* 闪控连接状态：纯图标（无边框），连上绿色，未连灰色 */
 .remote-chip {
   display: inline-flex;
   align-items: center;
@@ -1025,23 +1013,12 @@ body {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 0;
+  position: relative;
+  min-height: 38px;
 }
 .panel__title { display: inline-flex; align-items: center; gap: 7px; flex: none; white-space: nowrap; }
 .panel__title b { font-size: 16px; font-weight: 700; color: var(--txt); }
 .panel__title .i svg { width: 19px; height: 19px; }
-
-/* 标题后的助力百分比（仅手动模式显示） */
-.panel__pct {
-  font-style: normal;
-  font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -.02em;
-  color: var(--orange);
-  margin-left: 2px;
-  transition: color .2s;
-}
-.panel__pct[hidden] { display: none; }
 
 /* 闪控状态图标（顶部栏内，尺寸与蓝牙图标一致） */
 .remote-chip {
@@ -1063,28 +1040,46 @@ body {
  * 助力模式：常驻指示标签 + 扇形悬浮菜单
  * ========================================================================= */
 
-/* 常驻标签（标题右侧） */
+/* 常驻标签：放大，绝对定位于标题行中央 */
 .mode-chip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 11px;
-  border-radius: 13px;
-  font-size: 12px;
-  font-weight: 600;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 19px;
+  font-size: 15px;
+  font-weight: 700;
   color: #20160a;
-  background: linear-gradient(180deg, #ffc44d, #f5a015);
-  box-shadow: 0 3px 10px rgba(245, 160, 20, .28);
+  background: linear-gradient(180deg, #ffd066, #f5a015);
+  box-shadow: 0 4px 14px rgba(245, 160, 20, .38);
   white-space: nowrap;
-  flex: none;
   transition: transform .12s, box-shadow .12s;
 }
-.mode-chip__icon svg { width: 14px; height: 14px; }
-.mode-chip:active { transform: scale(.95); }
+.mode-chip__icon svg { width: 16px; height: 16px; }
+.mode-chip:active { transform: translate(-50%, -50%) scale(.96); }
 .mode-chip[aria-expanded="true"] {
-  box-shadow: 0 0 0 2px rgba(255, 196, 77, .35), 0 3px 10px rgba(245, 160, 20, .35);
+  box-shadow: 0 0 0 3px rgba(255, 196, 77, .32), 0 4px 14px rgba(245, 160, 20, .45);
 }
+
+/* 标签内的手动百分比 */
+.mode-chip__pct {
+  font-style: normal;
+  font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: #20160a;
+  padding-left: 7px;
+  margin-left: 1px;
+  border-left: 1.5px solid rgba(32, 22, 10, .28);
+  line-height: 1;
+}
+.mode-chip__pct[hidden] { display: none; }
 
 /* 悬浮菜单容器（铺满屏幕，锚点由 JS 定位到标签中心） */
 .mode-menu {

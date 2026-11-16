@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
   <link rel="stylesheet" href="assets/seg7-font.css?v=1" />
-  <link rel="stylesheet" href="css/style.css?v=45" />
+  <link rel="stylesheet" href="css/style.css?v=46" />
 </head>
 <body>
 
@@ -90,12 +90,12 @@
         <span class="panel__title">
           <span class="i i--orange" data-icon="bike" data-size="19"></span>
           <b>助力控制</b>
-          <em class="panel__pct" id="assistPct" hidden>0%</em>
         </span>
-        <!-- 常驻助力模式指示标签：点击弹出模式悬浮菜单 -->
+        <!-- 常驻助力模式标签（含手动百分比）：点击弹出模式悬浮菜单 -->
         <button class="mode-chip" id="modeChip" type="button" aria-haspopup="true" aria-expanded="false">
-          <span class="i mode-chip__icon" data-icon="manual" data-size="14"></span>
+          <span class="i mode-chip__icon" data-icon="manual" data-size="16"></span>
           <span id="modeChipText">手动</span>
+          <em class="mode-chip__pct" id="assistPct" hidden>0%</em>
         </button>
       </div>
 
@@ -170,7 +170,7 @@
       </article>
     </section>
 
-    <div class="version" id="buildInfo">v3.4.1 · 2026-11-16 10:45</div>
+    <div class="version" id="buildInfo">v3.4.2 · 2026-11-16 11:00</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -395,15 +395,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=68"></script>
-<script src="js/protocol.js?v=68"></script>
-<script src="js/config.js?v=68"></script>
-<script src="js/adapter.js?v=68"></script>
-<script src="js/ble.js?v=68"></script>
-<script src="js/remote.js?v=68"></script>
-<script src="js/app.js?v=68"></script>
-<script src="js/icons.js?v=68"></script>
-<script src="js/sim.js?v=68"></script>
-<script src="js/ui.js?v=68"></script>
+<script src="js/util.js?v=69"></script>
+<script src="js/protocol.js?v=69"></script>
+<script src="js/config.js?v=69"></script>
+<script src="js/adapter.js?v=69"></script>
+<script src="js/ble.js?v=69"></script>
+<script src="js/remote.js?v=69"></script>
+<script src="js/app.js?v=69"></script>
+<script src="js/icons.js?v=69"></script>
+<script src="js/sim.js?v=69"></script>
+<script src="js/ui.js?v=69"></script>
 </body>
 </html>
