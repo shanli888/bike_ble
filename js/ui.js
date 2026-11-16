@@ -87,9 +87,7 @@
     els.statTripInt = $('#statTripInt');
     els.statTripFrac = $('#statTripFrac');
     els.panel = $('#assistPanel');
-    
-    els.note = $('#assistNote');
-    
+
     els.modeRow = $('#modeRow');
     els.slider = $('#assistSlider');
     els.assistValue = $('#assistValue');
@@ -618,29 +616,16 @@
       btn.disabled = !ready;
     });
 
-    // 提示行
-    let note = '';
+    // 面板锁定样式（提示行已移除）
     if (ready) {
       els.panel.classList.remove('is-locked');
       els.panel.classList.add('is-parked-ready');
-      // 闪控停止状态优先展示
-      const rs = app.getRemoteState ? app.getRemoteState() : null;
-      if (rs && rs.stopped) {
-        note = `已停止助力 · 按闪控 ▲/▼ 恢复${rs.savedPower ? ` ${rs.savedPower}%` : ''}`;
-      } else if (demo && !live) {
-        note = '演示模式 · 可操作也可连闪控，只是不发送到设备';
-      } else if (rs && rs.pending) {
-        note = '调整中 · 松开 1 秒后下发到设备';
-      }
     } else {
       els.panel.classList.add('is-locked');
       els.panel.classList.remove('is-parked-ready');
     }
-    els.note.textContent = note;
-    els.note.hidden = !note;
 
     renderRemoteChip();
-    els.note.classList.remove('is-warn');
   }
 
   /* ---------------- 陀螺仪滤波 ----------------
@@ -735,11 +720,8 @@
 
   function renderDevice() {
     const { conn } = app.state;
+    // 设备页卡片里的名称（顶部栏文字统一由 renderConn 负责，避免互相覆盖）
     els.devName.textContent = conn.device ? conn.device.name : '未连接';
-    // 顶部栏设备名同步（有设备显示设备名，否则显示品牌默认值）
-    if (els.headDevName) {
-      els.headDevName.textContent = conn.device ? conn.device.name : 'LvBu motor';
-    }
     const map = {
       idle: ['未连接', ''],
       requesting: ['选择中…', 'is-busy'],

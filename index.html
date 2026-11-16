@@ -10,11 +10,11 @@
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
   <link rel="stylesheet" href="assets/seg7-font.css?v=1" />
-  <link rel="stylesheet" href="css/style.css?v=42" />
+  <link rel="stylesheet" href="css/style.css?v=43" />
 </head>
 <body>
 
-<!-- ============ 应用标题栏（信号 + 蓝牙 + 设备名/状态） ============ -->
+<!-- ============ 应用标题栏（信号 + 蓝牙 + 设备名/状态 + 闪控） ============ -->
 <header class="appbar">
   <div class="appbar-left">
     <span class="sig" id="sigWrap">
@@ -22,6 +22,9 @@
     </span>
     <span class="i brand-ico" id="btIcon" data-icon="bluetooth" data-size="15"></span>
     <span class="dev-name" id="devName">未连接</span>
+    <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
+      <span class="i remote-chip__icon" data-icon="remote" data-size="15"></span>
+    </span>
   </div>
 </header>
 
@@ -89,12 +92,7 @@
           <b>助力控制</b>
           <em class="panel__pct" id="assistPct" hidden>0%</em>
         </span>
-        <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
-          <span class="i remote-chip__icon" data-icon="remote" data-size="18"></span>
-        </span>
       </div>
-
-      <p class="panel__note" id="assistNote">拖动滑杆调整助力，实时下发给控制器</p>
 
       <div class="modes" id="modeRow" role="group" aria-label="骑行模式"></div>
 
@@ -160,7 +158,7 @@
       </article>
     </section>
 
-    <div class="version" id="buildInfo">v3.3.0 · 2026-11-16 10:05</div>
+    <div class="version" id="buildInfo">v3.3.1 · 2026-11-16 10:20</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -385,15 +383,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=65"></script>
-<script src="js/protocol.js?v=65"></script>
-<script src="js/config.js?v=65"></script>
-<script src="js/adapter.js?v=65"></script>
-<script src="js/ble.js?v=65"></script>
-<script src="js/remote.js?v=65"></script>
-<script src="js/app.js?v=65"></script>
-<script src="js/icons.js?v=65"></script>
-<script src="js/sim.js?v=65"></script>
-<script src="js/ui.js?v=65"></script>
+<script src="js/util.js?v=66"></script>
+<script src="js/protocol.js?v=66"></script>
+<script src="js/config.js?v=66"></script>
+<script src="js/adapter.js?v=66"></script>
+<script src="js/ble.js?v=66"></script>
+<script src="js/remote.js?v=66"></script>
+<script src="js/app.js?v=66"></script>
+<script src="js/icons.js?v=66"></script>
+<script src="js/sim.js?v=66"></script>
+<script src="js/ui.js?v=66"></script>
 </body>
 </html>
