@@ -1029,7 +1029,7 @@ body {
   color: #8b93a1;
   transition: color .25s ease;
 }
-.remote-chip__icon svg { width: 22px; height: 22px; display: block; }
+.remote-chip__icon svg { width: 26px; height: 26px; display: block; }
 /* 已连接：绿（设计稿 #22C55E） */
 .remote-chip.is-ready { color: #22c55e; }
 .remote-chip.is-busy { color: var(--amber); }

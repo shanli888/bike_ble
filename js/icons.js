@@ -50,9 +50,10 @@
     // 遥控器 / 闪控（线框版，保留兼容）
     remote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="3"/><circle cx="12" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M10 12.5h4"/><path d="M10 16h4"/><circle cx="9.2" cy="19" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r=".9" fill="currentColor" stroke="none"/><circle cx="14.8" cy="19" r=".9" fill="currentColor" stroke="none"/></svg>',
     /* 闪控状态图标（扁平化）：实心圆 + 快门方孔 + 四向三角键 + 两道蓝牙弧线
-     * 两态形状完全一致，颜色由 currentColor 控制，可做颜色过渡 */
+     * 两态形状完全一致，颜色由 currentColor 控制，可做颜色过渡。
+     * viewBox 已按实际内容边界收紧（原始 96×96 中内容仅占 66×62，且下留白过大）。 */
     remoteFlat:
-      '<svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<svg viewBox="9 7 72 68" fill="none" xmlns="http://www.w3.org/2000/svg">' +
       '<path d="M68 35 A32 32 0 0 0 53 18" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>' +
       '<path d="M76 32 A40 40 0 0 0 59 12" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" opacity="0.55"/>' +
       '<path fill-rule="evenodd" fill="currentColor" d="M38 20 A26 26 0 1 0 38 72 A26 26 0 1 0 38 20 Z M31 39 h14 a3 3 0 0 1 3 3 v8 a3 3 0 0 1 -3 3 h-14 a3 3 0 0 1 -3 -3 v-8 a3 3 0 0 1 3 -3 Z M38 23 L45 34 L31 34 Z M38 69 L45 58 L31 58 Z M15 46 L26 39 L26 53 Z M61 46 L50 39 L50 53 Z"/>' +
