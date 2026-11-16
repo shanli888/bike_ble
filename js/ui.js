@@ -558,9 +558,18 @@
       // 未连接时文字弱化
       els.headDevName.classList.toggle('is-idle', !ready);
     }
-    // 蓝牙图标：未连接灰，连接/演示蓝
+    // 蓝牙图标：未连接为灰色普通符号；连接/演示为蓝色「已连接」符号（两侧带点）
     const btIcon = $('#btIcon');
-    if (btIcon) btIcon.classList.toggle('is-active', ready);
+    if (btIcon) {
+      btIcon.classList.toggle('is-active', ready);
+      // 仅在状态真正切换时重绘 SVG，避免每帧重建
+      const want = ready ? 'bluetoothConnected' : 'bluetooth';
+      if (btIcon.dataset.icon !== want) {
+        btIcon.dataset.icon = want;
+        const svg = root.LVBU.icons.svg(want, { size: 19 });
+        if (svg) btIcon.innerHTML = svg;
+      }
+    }
 
     // 信号：真实连接用实际 RSSI；演示模式用一个波动的模拟值
     const isReal = conn.status === 'ready';
