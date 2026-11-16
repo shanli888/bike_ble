@@ -1025,11 +1025,13 @@ body {
   align-items: center;
   justify-content: center;
   flex: none;
-  color: #5b6276;                                   /* 未连接：灰 */
-  transition: color .25s;
+  /* 未连接：灰（设计稿 #8B93A1） */
+  color: #8b93a1;
+  transition: color .25s ease;
 }
-.remote-chip__icon svg { width: 15px; height: 15px; }
-.remote-chip.is-ready { color: var(--green); }      /* 已连接：绿 */
+.remote-chip__icon svg { width: 18px; height: 18px; display: block; }
+/* 已连接：绿（设计稿 #22C55E） */
+.remote-chip.is-ready { color: #22c55e; }
 .remote-chip.is-busy { color: var(--amber); }
 
 /* 模式按钮行：图标在上、文字在下 */
