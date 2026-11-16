@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
   <link rel="stylesheet" href="assets/seg7-font.css?v=1" />
-  <link rel="stylesheet" href="css/style.css?v=44" />
+  <link rel="stylesheet" href="css/style.css?v=45" />
 </head>
 <body>
 
@@ -99,10 +99,13 @@
         </button>
       </div>
 
-      <!-- 模式悬浮菜单（点击标签弹出的扇形排布） -->
+      <!-- 模式悬浮菜单（点击标签后以标签为圆心向四周辐射展开） -->
       <div class="mode-menu" id="modeMenu" hidden>
         <div class="mode-menu__backdrop" id="modeMenuBackdrop"></div>
-        <div class="mode-menu__list" id="modeRow" role="group" aria-label="骑行模式"></div>
+        <div class="mode-menu__list" id="modeList">
+          <span class="mode-menu__glow" aria-hidden="true"></span>
+          <div id="modeRow" role="group" aria-label="骑行模式"></div>
+        </div>
       </div>
 
       <!-- 档位选择（非手动模式） -->
@@ -167,7 +170,7 @@
       </article>
     </section>
 
-    <div class="version" id="buildInfo">v3.4.0 · 2026-11-16 10:30</div>
+    <div class="version" id="buildInfo">v3.4.1 · 2026-11-16 10:45</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -392,15 +395,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=67"></script>
-<script src="js/protocol.js?v=67"></script>
-<script src="js/config.js?v=67"></script>
-<script src="js/adapter.js?v=67"></script>
-<script src="js/ble.js?v=67"></script>
-<script src="js/remote.js?v=67"></script>
-<script src="js/app.js?v=67"></script>
-<script src="js/icons.js?v=67"></script>
-<script src="js/sim.js?v=67"></script>
-<script src="js/ui.js?v=67"></script>
+<script src="js/util.js?v=68"></script>
+<script src="js/protocol.js?v=68"></script>
+<script src="js/config.js?v=68"></script>
+<script src="js/adapter.js?v=68"></script>
+<script src="js/ble.js?v=68"></script>
+<script src="js/remote.js?v=68"></script>
+<script src="js/app.js?v=68"></script>
+<script src="js/icons.js?v=68"></script>
+<script src="js/sim.js?v=68"></script>
+<script src="js/ui.js?v=68"></script>
 </body>
 </html>

@@ -149,11 +149,52 @@
       headNameEl.style.cursor = 'pointer';
     }
 
-    /* ---- 模式悬浮菜单 ---- */
+    /* ---- 模式悬浮菜单（辐射式）---- */
+    /**
+     * 依据标签在屏幕上的位置，计算辐射圆心与每个按钮的角度。
+     * 向上展开优先（标签靠近顶部时改为向下），保证按钮都在视口内。
+     */
+    const layoutModeMenu = () => {
+      const chip = $('#modeChip');
+      const list = $('#modeList');
+      const menu = $('#modeMenu');
+      if (!chip || !list || !menu) return;
+
+      const r = chip.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+
+      // 圆心略低于标签，避免按钮压住标签本身
+      const ox = Math.max(80, Math.min(window.innerWidth - 80, cx));
+      const oy = Math.max(70, Math.min(window.innerHeight - 70, cy));
+
+      menu.style.setProperty('--ox', `${ox}px`);
+      menu.style.setProperty('--oy', `${oy}px`);
+
+      // 半径：按视口宽度自适应（5 个按钮需约 2.2 倍直径的横向空间）
+      const radius = Math.min(150, Math.max(96, window.innerWidth * 0.34));
+
+      const btns = $$('.mode', els.modeRow);
+      const n = btns.length || 1;
+      // 从 -180°(左) 到 -0°(右) 铺满上半圆，再按 180° 展开为完整圆
+      // 这里用上半圆 210° 覆盖范围，视觉更舒展
+      const start = -Math.PI * 0.95;   // 约 -171°
+      const end = -Math.PI * 0.05;     // 约 -9°
+      btns.forEach((btn, i) => {
+        const t = n === 1 ? 0.5 : i / (n - 1);
+        const ang = start + (end - start) * t;
+        const deg = (ang * 180) / Math.PI;
+        btn.style.setProperty('--ang', `${deg.toFixed(2)}deg`);
+        btn.style.setProperty('--r', `${radius}px`);
+        btn.style.setProperty('--d', `${i * 26}ms`);
+      });
+    };
+
     const openModeMenu = (open) => {
       const menu = $('#modeMenu');
       const chip = $('#modeChip');
       if (!menu) return;
+      if (open) layoutModeMenu();
       menu.hidden = !open;
       if (chip) chip.setAttribute('aria-expanded', String(open));
     };
@@ -165,6 +206,10 @@
     $('#modeMenuBackdrop').addEventListener('click', () => openModeMenu(false));
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') openModeMenu(false);
+    });
+    window.addEventListener('resize', () => {
+      const menu = $('#modeMenu');
+      if (menu && !menu.hidden) layoutModeMenu();
     });
 
     // 助力：点击模式按钮立即下发
