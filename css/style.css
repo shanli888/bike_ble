@@ -1011,10 +1011,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 0;
+  gap: 10px;
+  margin-bottom: 16px;
   position: relative;
-  min-height: 38px;
 }
 .panel__title { display: inline-flex; align-items: center; gap: 7px; flex: none; white-space: nowrap; }
 .panel__title b { font-size: 16px; font-weight: 700; color: var(--txt); }
@@ -1040,43 +1039,40 @@ body {
  * 助力模式：常驻指示标签 + 扇形悬浮菜单
  * ========================================================================= */
 
-/* 常驻标签：放大，绝对定位于标题行中央 */
+/* 常驻标签：右侧中等尺寸，与标题视觉平衡 */
 .mode-chip {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 11px;
-  font-size: 15px;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 13px;
   font-weight: 700;
   color: #20160a;
   background: linear-gradient(180deg, #ffd066, #f5a015);
-  box-shadow: 0 4px 14px rgba(245, 160, 20, .38);
+  box-shadow: 0 2px 8px rgba(245, 160, 20, .32);
   white-space: nowrap;
+  flex: none;
   transition: transform .12s, box-shadow .12s;
 }
-.mode-chip__icon svg { width: 16px; height: 16px; }
-.mode-chip:active { transform: translate(-50%, -50%) scale(.96); }
+.mode-chip__icon svg { width: 14px; height: 14px; }
+.mode-chip:active { transform: scale(.96); }
 .mode-chip[aria-expanded="true"] {
-  box-shadow: 0 0 0 3px rgba(255, 196, 77, .32), 0 4px 14px rgba(245, 160, 20, .45);
+  box-shadow: 0 0 0 2px rgba(255, 196, 77, .3), 0 2px 8px rgba(245, 160, 20, .4);
 }
 
 /* 标签内的手动百分比 */
 .mode-chip__pct {
   font-style: normal;
   font-family: "Helvetica Neue", -apple-system, "SF Pro Display", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: -.02em;
   color: #20160a;
-  padding-left: 7px;
+  padding-left: 6px;
   margin-left: 1px;
-  border-left: 1.5px solid rgba(32, 22, 10, .28);
+  border-left: 1.5px solid rgba(32, 22, 10, .26);
   line-height: 1;
 }
 .mode-chip__pct[hidden] { display: none; }
@@ -1203,14 +1199,14 @@ body {
 .assist-ctl {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 0;
 }
 .btn-ctl {
   flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 11px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1219,7 +1215,7 @@ body {
   border: 1px solid rgba(255, 255, 255, .06);
   transition: background .12s, border-color .12s, transform .08s, color .12s;
 }
-.btn-ctl svg { width: 18px; height: 18px; }
+.btn-ctl svg { width: 17px; height: 17px; }
 .btn-ctl:disabled { opacity: .38; }
 /* 按下效果：真实点击 或 闪控联动触发 */
 .btn-ctl:active,
@@ -1260,15 +1256,6 @@ input.slider::-moz-range-thumb {
   width: 23px; height: 23px; border: 0;
   border-radius: 50%; background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
-}
-
-/* 助力百分比读数（右下角小字） */
-.assist-ctl__value {
-  margin-top: 8px;
-  text-align: right;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--orange);
 }
 
 /* ---------------- 传感器卡片行 ---------------- */
