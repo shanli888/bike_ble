@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>蓝牙图标对比</title>
+<style>
+  body {
+    background: #12141c;
+    color: #e9eefb;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    padding: 40px;
+    margin: 0;
+  }
+  h2 { font-size: 15px; color: #8b93a1; font-weight: 600; margin: 32px 0 14px; }
+  .row { display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap; }
+  .item { text-align: center; }
+  .item svg { display: block; margin: 0 auto; }
+  .cap { font-size: 11px; color: #8b93a1; margin-top: 8px; }
+  .blue { color: #4aa8ff; }
+  .gray { color: #5b6276; }
+  .bar {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #0a0c12; padding: 6px 20px; border-radius: 8px;
+    border: 1px solid #232838;
+  }
+  .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 17px; }
+  .bars i { width: 3.5px; border-radius: 1px; background: #3ddc8c; display: block; }
+  .bars i:nth-child(1) { height: 5px; }
+  .bars i:nth-child(2) { height: 9px; }
+  .bars i:nth-child(3) { height: 13px; }
+  .bars i:nth-child(4) { height: 17px; }
+</style>
+</head>
+<body>
+
+<h2>未连接（灰色普通符号）</h2>
+<div class="row" id="rowA"></div>
+
+<h2>已连接（蓝色 + 两侧圆点）</h2>
+<div class="row" id="rowB"></div>
+
+<h2>实际顶栏组合（放大 3 倍示意）</h2>
+<div class="row" id="rowC"></div>
+
+<script src="../js/icons.js"></script>
+<script>
+  const ICONS = globalThis.LVBU.icons;
+
+  function make(name, size, cls) {
+    const d = document.createElement('div');
+    d.className = 'item ' + (cls || '');
+    d.innerHTML = ICONS.svg(name, { size });
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = size + 'px';
+    d.appendChild(cap);
+    return d;
+  }
+
+  // 未连接
+  const rowA = document.getElementById('rowA');
+  [16, 19, 24, 32, 64].forEach((s) => rowA.appendChild(make('bluetooth', s, 'gray')));
+
+  // 已连接
+  const rowB = document.getElementById('rowB');
+  [16, 19, 24, 32, 64].forEach((s) => rowB.appendChild(make('bluetoothConnected', s, 'blue')));
+
+  // 顶栏组合
+  const rowC = document.getElementById('rowC');
+  ['bluetooth', 'bluetoothConnected'].forEach((name) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.innerHTML =
+      '<span class="bars"><i></i><i></i><i></i><i></i></span>' +
+      '<span class="' + (name === 'bluetoothConnected' ? 'blue' : 'gray') + '">' +
+      ICONS.svg(name, { size: 19 }) +
+      '</span>';
+    rowC.appendChild(bar);
+  });
+</script>
+</body>
+</html>

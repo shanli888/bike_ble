@@ -36,12 +36,14 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.2 17.5a8.6 8.6 0 1115.6 0"/><path d="M12 13.2l4.2-4.4"/><circle cx="12" cy="14.2" r="1.5" fill="currentColor" stroke="none"/></svg>',
     bluetooth:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 7.5l9 9L12 21V3l4.5 4.5-9 9"/></svg>',
-    /* 蓝牙已连接：符号两侧各一个小圆点（标准「已配对」语义） */
+    /* 蓝牙已连接：符号居中，左右两侧各一个圆点，与符号垂直中心精确对齐 */
     bluetoothConnected:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
-      '<path d="M9 8.2l6 6L12 17V5l3 2.8-6 6"/>' +
-      '<circle cx="3.6" cy="6" r="1.35" fill="currentColor" stroke="none"/>' +
-      '<circle cx="20.4" cy="6" r="1.35" fill="currentColor" stroke="none"/>' +
+      /* 蓝牙符号：y 范围 6.4..17.6，垂直中心 12，与 viewBox 中心一致 */
+      '<path d="M9.6 10.6l4.8 4.8L12 17.6V6.4l2.4 2.2-4.8 4.8"/>' +
+      /* 左右点：cy=12 与符号中心同高 */
+      '<circle cx="5.2" cy="12" r="1.5" fill="currentColor" stroke="none"/>' +
+      '<circle cx="18.8" cy="12" r="1.5" fill="currentColor" stroke="none"/>' +
       '</svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.6 1.6 0 00.32 1.77l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.6 1.6 0 00-1.77-.32 1.6 1.6 0 00-.97 1.47V21a2 2 0 11-4 0v-.09A1.6 1.6 0 009.18 19.4a1.6 1.6 0 00-1.77.32l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.6 1.6 0 004.9 15a1.6 1.6 0 00-1.47-.97H3.3a2 2 0 110-4h.09A1.6 1.6 0 004.9 9a1.6 1.6 0 00-.32-1.77l-.06-.06a2 2 0 112.83-2.83l.06.06A1.6 1.6 0 009.18 4.9h.09A1.6 1.6 0 0010.74 3.4V3.3a2 2 0 114 0v.09a1.6 1.6 0 00.97 1.47 1.6 1.6 0 001.77-.32l.06-.06a2 2 0 112.83 2.83l-.06.06A1.6 1.6 0 0019.4 9v.09a1.6 1.6 0 001.47.97h.09a2 2 0 110 4h-.09a1.6 1.6 0 00-1.47.94z"/></svg>',
     plug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6M15 3v6"/><path d="M6 9h12v3a6 6 0 01-12 0z"/><path d="M12 18v3"/></svg>',
