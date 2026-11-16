@@ -844,7 +844,7 @@ body {
 }
 .appbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
 .brand-ico { color: #5b6276; display: inline-flex; flex: none; transition: color .25s; }
-.brand-ico svg { width: 15px; height: 15px; }
+.brand-ico svg { width: 19px; height: 19px; }
 /* 已连接 / 演示：蓝色 */
 .brand-ico.is-active { color: var(--blue); }
 .dev-name {
@@ -863,18 +863,18 @@ body {
   display: inline-flex;
   align-items: flex-end;
   gap: 2px;
-  height: 14px;
+  height: 17px;
 }
 .sig .bars i {
-  width: 3px;
+  width: 3.5px;
   border-radius: 1px;
   background: rgba(255, 255, 255, .14);
   transition: background .2s;
 }
-.sig .bars i:nth-child(1) { height: 4px; }
-.sig .bars i:nth-child(2) { height: 7px; }
-.sig .bars i:nth-child(3) { height: 10px; }
-.sig .bars i:nth-child(4) { height: 14px; }
+.sig .bars i:nth-child(1) { height: 5px; }
+.sig .bars i:nth-child(2) { height: 9px; }
+.sig .bars i:nth-child(3) { height: 13px; }
+.sig .bars i:nth-child(4) { height: 17px; }
 /* 未连接：灰色 */
 .sig .bars i.on { background: #7b859c; }
 /* 已连接：绿色 */
@@ -1029,7 +1029,7 @@ body {
   color: #8b93a1;
   transition: color .25s ease;
 }
-.remote-chip__icon svg { width: 18px; height: 18px; display: block; }
+.remote-chip__icon svg { width: 22px; height: 22px; display: block; }
 /* 已连接：绿（设计稿 #22C55E） */
 .remote-chip.is-ready { color: #22c55e; }
 .remote-chip.is-busy { color: var(--amber); }
