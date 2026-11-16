@@ -844,10 +844,11 @@ body {
   background: var(--bg-top, var(--bg));
 }
 .appbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-.brand-ico { color: #5b6276; display: inline-flex; align-items: center; flex: none; transition: color .25s; }
+/* 未连接：灰（设计稿 #9AA0A6） */
+.brand-ico { color: #9aa0a6; display: inline-flex; align-items: center; flex: none; transition: color .25s; }
 .brand-ico svg { width: 19px; height: 19px; display: block; }
-/* 已连接 / 演示：蓝色 */
-.brand-ico.is-active { color: var(--blue); }
+/* 已连接 / 演示：蓝（设计稿 #1A73E8） */
+.brand-ico.is-active { color: #1a73e8; }
 .dev-name {
   font-size: 15px;
   font-weight: 600;
