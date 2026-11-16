@@ -562,17 +562,8 @@
     });
     rm.on('log', (text) => log('info', '[闪控] ' + text));
     rm.on('raw', (hex) => log('rx', '[闪控] ' + hex));
-    rm.on('key', ({ key, name, edge }) => {
-      log('info', `[闪控] 识别按键: ${name} (码 ${key}${edge ? ' ' + edge : ''})`);
-      onRemoteKey(name);
-    });
-    rm.on('release', ({ key, name }) => {
-      log('info', `[闪控] 按键抬起: ${name} (码 ${key})`);
-    });
-    rm.on('unknownByte', ({ key, byte }) => {
-      log('info', `[闪控] 未知字节 0x${key} (${byte}) — 请记录对应按了哪个键`);
-    });
-    rm.on('other', (hex) => log('info', '[闪控] 未知帧: ' + hex));
+    // 按键直接联动界面，不产生额外提示
+    rm.on('key', ({ name }) => onRemoteKey(name));
     changed();
   }
 
@@ -586,77 +577,57 @@
   async function onRemoteKey(name) {
     const live = state.conn.status === 'ready';
     const demo = !live && !!state.prefs.simulateWhenDisconnected;
-    log(
-      'info',
-      `[闪控] 按键 ${name} · 连接状态=${state.conn.status} · 演示开关=${state.prefs.simulateWhenDisconnected} · 判定=${live ? '真实' : demo ? '模拟' : '拒绝'}`
-    );
-    if (!live && !demo) {
-      toast('请先连接助力控制器（或在设置中打开演示数据）', 'error');
+    if (!live && !demo) return;
+
+    // ---- 上/下键：等价于点击界面上的 ＋ / － 按钮 ----
+    if (name === 'up' || name === 'down') {
+      // 通知 UI 让对应按钮播放「按下」效果
+      emit('remoteKeyEffect', { dir: name === 'up' ? 'plus' : 'minus' });
+
+      // 停止状态下按上下键 → 恢复原有助力
+      if (remoteCtlState.stopped) {
+        const saved = remoteCtlState.savedPower;
+        remoteCtlState.stopped = false;
+        remoteCtlState.savedPower = null;
+        const restore = saved != null && saved > 0 ? saved : name === 'up' ? state.prefs.sliderStep || 5 : 0;
+        state.draft.value = restore;
+        state.draft.mode = 'manual';
+        state.draft.dirty = true;
+        changed();
+        if (!live) return; // 演示模式不发送
+        scheduleAssistSend('percent');
+        return;
+      }
+
+      // 正常调整：与界面加减按钮完全一致（含延迟下发与边界处理）
+      const step = state.prefs.sliderStep || 5;
+      const cur = state.draft.value || 0;
+      const next = Math.max(0, Math.min(99, cur + (name === 'up' ? step : -step)));
+      if (next === cur) return; // 已到边界，无变化
+      state.draft.value = next;
+      state.draft.mode = 'manual';
+      state.draft.dirty = true;
+      changed();
+      if (!live) return; // 演示模式不发送
+      scheduleAssistSend('percent');
       return;
     }
-    const simulate = !live; // 演示模式：只提示，不发送
 
     // ---- 停止键：停止助力（立即发送，安全操作）----
     if (name === 'home') {
       const cur = state.draft.value || 0;
       if (cur <= 0 && remoteCtlState.stopped) return;
-      cancelScheduledSend(); // 取消尚未发出的调整
+      cancelScheduledSend();
       remoteCtlState.savedPower = cur;
       remoteCtlState.stopped = true;
       state.draft.value = 0;
       state.draft.mode = 'manual';
       state.draft.dirty = true;
       changed();
-      if (simulate) {
-        toast(`【模拟】已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
-        return;
-      }
-      const ok = await applyAssist();
-      if (ok) toast(`已停止助力（原 ${cur}%，按 ▲/▼ 恢复）`, 'success');
+      if (!live) return; // 演示模式不发送
+      await applyAssist();
       return;
     }
-
-    // ---- 上/下键 ----
-    if (name !== 'up' && name !== 'down') return;
-
-    // 停止状态下按上下键：恢复原有助力
-    if (remoteCtlState.stopped) {
-      const saved = remoteCtlState.savedPower;
-      remoteCtlState.stopped = false;
-      remoteCtlState.savedPower = null;
-      const restore = saved != null && saved > 0 ? saved : name === 'up' ? state.prefs.sliderStep || 5 : 0;
-      state.draft.value = restore;
-      state.draft.mode = 'manual';
-      state.draft.dirty = true;
-      changed();
-      if (simulate) {
-        toast(`【模拟】恢复助力 ${restore}%（未发送到设备）`, 'success');
-        return;
-      }
-      // 恢复也走延迟队列（可继续用按键微调）
-      scheduleAssistSend('percent');
-      if (saved != null && saved > 0) toast(`恢复助力 ${saved}%`, 'success');
-      return;
-    }
-
-    // ---- 正常调整：可连续按键，延迟 1 秒后只发最终值 ----
-    const step = state.prefs.sliderStep || 5;
-    const cur = state.draft.value || 0;
-    const next = Math.max(0, Math.min(99, cur + (name === 'up' ? step : -step)));
-    if (next === cur) {
-      toast(next >= 99 ? '已到最大助力 99%' : '已到最小助力 0%');
-      return;
-    }
-    state.draft.value = next;
-    state.draft.mode = 'manual';
-    state.draft.dirty = true;
-    changed();
-
-    if (simulate) {
-      toast(`【模拟】助力 ${next}%（未发送到设备）`, 'success');
-      return;
-    }
-    scheduleAssistSend('percent');
   }
 
   async function connectRemote() {

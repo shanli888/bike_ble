@@ -1123,9 +1123,18 @@ body {
   color: #cfd4e0;
   background: rgba(255, 255, 255, .055);
   border: 1px solid rgba(255, 255, 255, .06);
+  transition: background .12s, border-color .12s, transform .08s, color .12s;
 }
 .btn-ctl svg { width: 18px; height: 18px; }
 .btn-ctl:disabled { opacity: .38; }
+/* 按下效果：真实点击 或 闪控联动触发 */
+.btn-ctl:active,
+.btn-ctl.is-pressed {
+  background: rgba(255, 176, 32, .22);
+  border-color: rgba(255, 176, 32, .55);
+  color: var(--orange);
+  transform: scale(.94);
+}
 
 .sliderwrap { flex: 1; min-width: 0; display: flex; align-items: center; }
 input.slider {

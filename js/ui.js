@@ -283,6 +283,8 @@
     app.on('toast', (t) => toast(t.text, t.level));
     app.on('log', (entry) => appendLogLine(entry));
     app.on('page', renderPage);
+    // 闪控 ▲/▼ → 界面 ＋/－ 按钮播放按下效果
+    app.on('remoteKeyEffect', ({ dir }) => flashCtlButton(dir));
     app.on('stale', () => {
       if (!els.staleShown) {
         els.staleShown = true;
@@ -332,6 +334,18 @@
     d.dirty = false;
     app._internal.changed();
     toast('（演示）参数已应用', 'success');
+  }
+
+  /** 让 ＋/－ 按钮播放一次「按下」效果（供闪控联动使用） */
+  function flashCtlButton(dir) {
+    const btn = dir === 'plus' ? els.btnPlus : els.btnMinus;
+    if (!btn) return;
+    btn.classList.remove('is-pressed');
+    // 强制重排以便连续触发动画
+    void btn.offsetWidth;
+    btn.classList.add('is-pressed');
+    clearTimeout(btn._flashTimer);
+    btn._flashTimer = setTimeout(() => btn.classList.remove('is-pressed'), 180);
   }
 
   async function nudge(dir) {
