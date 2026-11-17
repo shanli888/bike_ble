@@ -1363,6 +1363,47 @@ input.slider::-moz-range-thumb {
 .view .card--amber .bgrid i.on { background: var(--amber); box-shadow: 0 0 6px rgba(255, 159, 69, .55); }
 .view .card--cyan .bgrid i.on { background: var(--blue); box-shadow: 0 0 6px rgba(74, 168, 255, .55); }
 
+/* ===== 陀螺仪 11 格双向条 =====
+ * 中心格索引 5；下坡绿（向左）、上坡红（向右）、平路仅中心蓝
+ * 用 data-tone 精确控制每格颜色，覆盖上面的单向条配色 */
+.view .bgrid.bgrid--slope {
+  grid-template-columns: repeat(11, 1fr);
+  gap: 2px;
+}
+.view .bgrid--slope i {
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .09);   /* 熄灭格 */
+  transition: background .25s, box-shadow .25s;
+}
+/* 中心格稍作视觉强调（略宽/略高） */
+.view .bgrid--slope i.is-center {
+  border-radius: 2.5px;
+}
+
+/* 点亮格按方向着色（配色按文档 DashColors：蓝 #4AA8FF / 绿 #3DDC8C / 红 #FF0000） */
+.view .bgrid--slope i.on { box-shadow: 0 0 6px currentColor; }
+/* 平路/0 附近：蓝 */
+.view .bgrid--slope i[data-tone="flat"] {
+  background: #4aa8ff;
+  color: rgba(74, 168, 255, .6);
+}
+/* 下坡：绿（向左） */
+.view .bgrid--slope i[data-tone="down"] {
+  background: #3ddc8c;
+  color: rgba(61, 220, 140, .6);
+}
+/* 上坡：红（向右） */
+.view .bgrid--slope i[data-tone="up"] {
+  background: #ff0000;
+  color: rgba(255, 0, 0, .55);
+}
+/* 熄灭：回到灰 */
+.view .bgrid--slope i[data-tone="off"] {
+  background: rgba(255, 255, 255, .09);
+  box-shadow: none;
+}
+
 /* 大读数：系统细体 32px */
 .view .card__value {
   margin-top: auto;

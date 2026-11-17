@@ -113,8 +113,8 @@
     b.controllerTemp = Math.round((5 + tempTri * 60) * 10) / 10;
     b.motorTemp = Math.round((b.controllerTemp + rand(1, 3)) * 10) / 10;
 
-    // 陀螺仪：-3° ~ 3° 缓慢摆动
-    b.gyro = Math.round(Math.sin(script.t / 4) * 3 * 10) / 10;
+    // 陀螺仪角度固定 3.2°（文档 §5：演示数据不随时间变化，固定正坡度）
+    b.gyro = 3.2;
 
     // 助力功率（仅演示显示）
     if ((s.confirmed.value || 0) > 0) {

@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
   <link rel="stylesheet" href="assets/seg7-font.css?v=1" />
-  <link rel="stylesheet" href="css/style.css?v=59" />
+  <link rel="stylesheet" href="css/style.css?v=60" />
 </head>
 <body>
 
@@ -167,13 +167,14 @@
           <span>陀螺仪</span>
         </header>
         <div class="barframe">
-          <div class="bgrid" data-field="slopeGrid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <!-- 11 格双向条：索引 5 为中心格，左右各 5 格 -->
+          <div class="bgrid bgrid--slope" data-field="slopeGrid"><i data-seg="0"></i><i data-seg="1"></i><i data-seg="2"></i><i data-seg="3"></i><i data-seg="4"></i><i data-seg="5"></i><i data-seg="6"></i><i data-seg="7"></i><i data-seg="8"></i><i data-seg="9"></i><i data-seg="10"></i></div>
         </div>
         <div class="card__value" data-field="slope">--<em class="u u--sup">°</em></div>
       </article>
     </section>
 
-    <div class="version" id="buildInfo">v3.5.10 · 2026-11-17 10:15</div>
+    <div class="version" id="buildInfo">v3.6.0 · 2026-11-17 10:40</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -398,15 +399,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=78"></script>
-<script src="js/protocol.js?v=78"></script>
-<script src="js/config.js?v=78"></script>
-<script src="js/adapter.js?v=78"></script>
-<script src="js/ble.js?v=78"></script>
-<script src="js/remote.js?v=78"></script>
-<script src="js/app.js?v=78"></script>
-<script src="js/icons.js?v=78"></script>
-<script src="js/sim.js?v=78"></script>
-<script src="js/ui.js?v=78"></script>
+<script src="js/util.js?v=79"></script>
+<script src="js/protocol.js?v=79"></script>
+<script src="js/config.js?v=79"></script>
+<script src="js/adapter.js?v=79"></script>
+<script src="js/ble.js?v=79"></script>
+<script src="js/remote.js?v=79"></script>
+<script src="js/app.js?v=79"></script>
+<script src="js/icons.js?v=79"></script>
+<script src="js/sim.js?v=79"></script>
+<script src="js/ui.js?v=79"></script>
 </body>
 </html>

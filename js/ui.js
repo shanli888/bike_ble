@@ -751,6 +751,57 @@
     grid.dataset.level = level || 'high';
   }
 
+  /* ---------------- 陀螺仪 11 格双向条 ----------------
+   * 规则（见《首页陀螺仪坡度显示逻辑》）：
+   *   中心格索引 5，左右各 5 格
+   *   level = clamp(round(|slope| / 5), 0, 5)   每格约 5°，单侧最多 5 格
+   *   side  = slope < 0 → -1（下坡，向左）；slope > 0 → +1（上坡，向右）；0 → 0
+   *
+   * 四种状态：
+   *   无数据   hasData=false      → 全部熄灭（灰）
+   *   0 附近   level === 0        → 仅中心格，蓝色
+   *   下坡     side<0 && level>0  → 中心 + 左侧 level 格，绿色
+   *   上坡     side>0 && level>0  → 中心 + 右侧 level 格，红色
+   *
+   * 易错点：平路必须按 level === 0 判定，不能用 side === 0。
+   * 像 0.4° 这种值 side=+1 但 level=0，若按 side 判定中心格会被误标成红色。
+   */
+  const SLOPE_CENTER = 5;
+  const SLOPE_MAX_LEVEL = 5;
+  const SLOPE_DEG_PER_CELL = 5;
+
+  function renderSlopeBar(slope) {
+    const grid = $('[data-field="slopeGrid"]');
+    if (!grid) return;
+    const cells = $$('i', grid);
+
+    const hasData = slope != null && isFinite(slope);
+    const abs = hasData ? Math.abs(slope) : 0;
+    const level = hasData
+      ? Math.min(SLOPE_MAX_LEVEL, Math.max(0, Math.round(abs / SLOPE_DEG_PER_CELL)))
+      : 0;
+    const side = !hasData || slope === 0 ? 0 : slope < 0 ? -1 : 1;
+
+    cells.forEach((cell, i) => {
+      const isCenter = i === SLOPE_CENTER;
+      const filled =
+        hasData &&
+        (isCenter ||
+          (side < 0 && i >= SLOPE_CENTER - level && i < SLOPE_CENTER) ||
+          (side > 0 && i > SLOPE_CENTER && i <= SLOPE_CENTER + level));
+
+      // 0 附近：只有中心格亮，蓝色；有坡度时整条（含中心）跟随方向色
+      const tone = !filled ? 'off' : level === 0 ? 'flat' : side < 0 ? 'down' : 'up';
+
+      cell.classList.toggle('on', filled);
+      cell.dataset.tone = tone;
+      // 中心格视觉上更突出
+      cell.classList.toggle('is-center', isCenter);
+    });
+
+    grid.dataset.state = !hasData ? 'none' : level === 0 ? 'flat' : side < 0 ? 'down' : 'up';
+  }
+
   function renderCards() {
     const b = app.state.bike;
 
@@ -760,10 +811,10 @@
     const rawAngle = b.gyro != null && isFinite(b.gyro) ? b.gyro : null;
     if (rawAngle != null) pushGyroSample(rawAngle);
     const angle = getFilteredGyro();
-    // 单位由 HTML 的 <em class="u"> 提供，这里只输出数值
+    // 单位由 HTML 的 <em class="u"> 提供，这里只输出数值（1 位小数）
     setCard('cardGyro', angle, (v) => util.fixed(v, 1));
-    // 进度条：角度绝对值 0~90° 映射到 10 格
-    renderBars('slopeGrid', angle == null ? null : util.clamp(Math.abs(angle) / 90, 0, 1), 'high');
+    // 11 格双向条
+    renderSlopeBar(angle);
 
     // ===== 电量 =====
     const battCard = document.getElementById('cardBattery');
