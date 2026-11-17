@@ -10,21 +10,23 @@
   <meta name="apple-mobile-web-app-title" content="智能码表" />
   <title>智能码表 · LVBU</title>
   <link rel="stylesheet" href="assets/seg7-font.css?v=1" />
-  <link rel="stylesheet" href="css/style.css?v=56" />
+  <link rel="stylesheet" href="css/style.css?v=57" />
 </head>
 <body>
 
-<!-- ============ 应用标题栏（信号 + 蓝牙 + 闪控） ============ -->
+<!-- ============ 应用标题栏（右侧图标组：闪控 → 蓝牙 → 信号） ============ -->
 <header class="appbar">
   <div class="appbar-left">
-    <span class="sig" id="sigWrap">
-      <span class="bars" id="signalBars"><i></i><i></i><i></i><i></i></span>
-    </span>
-    <span class="i brand-ico" id="btIcon" data-icon="bluetooth" data-size="19"></span>
     <!-- 设备名/状态文字已移除，仅保留状态图标表达 -->
     <span class="dev-name sr-only" id="devName">未连接</span>
-    <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
-      <span class="i remote-chip__icon" data-icon="remoteFlat" data-size="18"></span>
+    <span class="appbar-icons">
+      <span class="remote-chip" id="remoteChip" title="BR80 闪控未连接" aria-label="BR80 闪控未连接">
+        <span class="i remote-chip__icon" data-icon="remoteFlat" data-size="18"></span>
+      </span>
+      <span class="i brand-ico" id="btIcon" data-icon="bluetooth" data-size="19"></span>
+      <span class="sig" id="sigWrap">
+        <span class="bars" id="signalBars"><i></i><i></i><i></i><i></i></span>
+      </span>
     </span>
   </div>
 </header>
@@ -171,7 +173,7 @@
       </article>
     </section>
 
-    <div class="version" id="buildInfo">v3.5.7 · 2026-11-16 19:10</div>
+    <div class="version" id="buildInfo">v3.5.8 · 2026-11-17 09:45</div>
   </section>
 
   <!-- ==================== 设备 ==================== -->
@@ -396,15 +398,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/util.js?v=77"></script>
-<script src="js/protocol.js?v=77"></script>
-<script src="js/config.js?v=77"></script>
-<script src="js/adapter.js?v=77"></script>
-<script src="js/ble.js?v=77"></script>
-<script src="js/remote.js?v=77"></script>
-<script src="js/app.js?v=77"></script>
-<script src="js/icons.js?v=77"></script>
-<script src="js/sim.js?v=77"></script>
-<script src="js/ui.js?v=77"></script>
+<script src="js/util.js?v=78"></script>
+<script src="js/protocol.js?v=78"></script>
+<script src="js/config.js?v=78"></script>
+<script src="js/adapter.js?v=78"></script>
+<script src="js/ble.js?v=78"></script>
+<script src="js/remote.js?v=78"></script>
+<script src="js/app.js?v=78"></script>
+<script src="js/icons.js?v=78"></script>
+<script src="js/sim.js?v=78"></script>
+<script src="js/ui.js?v=78"></script>
 </body>
 </html>

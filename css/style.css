@@ -843,9 +843,34 @@ body {
   border-bottom: 1px solid var(--line);
   background: var(--bg-top, var(--bg));
 }
-.appbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+/* 顶栏左侧容器：内容整体靠右 */
+.appbar-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  flex: 1;
+}
+
+/* 右侧图标组：闪控 → 蓝牙 → 信号，等间距 */
+.appbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;          /* 统一间距 */
+  flex: none;
+}
+/* 每个图标用固定尺寸的盒子，消除不同宽度导致的视觉间距差异 */
+.appbar-icons > * {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
 /* 未连接：灰（设计稿 #9AA0A6） */
-.brand-ico { color: #9aa0a6; display: inline-flex; align-items: center; flex: none; transition: color .25s; }
+.brand-ico { color: #9aa0a6; display: flex; align-items: center; justify-content: center; flex: none; transition: color .25s; }
 .brand-ico svg { width: 19px; height: 19px; display: block; }
 /* 已连接 / 演示：蓝（设计稿 #1A73E8） */
 .brand-ico.is-active { color: #1a73e8; }
@@ -860,14 +885,12 @@ body {
 }
 /* 未连接：文字弱化为灰色 */
 .dev-name.is-idle { color: var(--muted); font-weight: 500; }
-.sig { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+.sig { display: flex; align-items: center; justify-content: center; gap: 5px; flex: none; }
 .sig .bars {
   display: inline-flex;
   align-items: flex-end;
   gap: 2px;
   height: 17px;
-  /* 让信号格整体在顶栏中垂直居中 */
-  align-self: center;
 }
 .sig .bars i {
   width: 3.5px;
