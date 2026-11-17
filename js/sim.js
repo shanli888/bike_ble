@@ -113,8 +113,13 @@
     b.controllerTemp = Math.round((5 + tempTri * 60) * 10) / 10;
     b.motorTemp = Math.round((b.controllerTemp + rand(1, 3)) * 10) / 10;
 
-    // 陀螺仪角度固定 3.2°（文档 §5：演示数据不随时间变化，固定正坡度）
-    b.gyro = 3.2;
+    // 陀螺仪坡度：-28° ~ +28° 往返扫描（24 秒一圈），覆盖全部显示状态：
+    //   |值| < 2.5°    → level=0，中心蓝（平路）
+    //   2.5° ~ 27.5°   → level 1~5，上坡红 / 下坡绿
+    //   ≥ 27.5°        → level=5 饱和（满格）
+    const slopePhase = (script.t % 24) / 24;
+    const slopeTri = slopePhase < 0.5 ? slopePhase * 2 : (1 - slopePhase) * 2;
+    b.gyro = Math.round((slopeTri * 56 - 28) * 10) / 10;   // -28 → +28 → -28
 
     // 助力功率（仅演示显示）
     if ((s.confirmed.value || 0) > 0) {

@@ -186,12 +186,26 @@
     const temperature = readValue(CMDS.temperature, 10);
     if (temperature != null) update.controllerTemp = temperature;
 
-    // 陀螺仪/坡度 BD
-    const gyro = readValue(CMDS.gyro, 10);
-    if (gyro != null) {
-      update.gyro = gyro;
-      // 保留原始十六进制数值，便于实机比对缩放系数
-      update.gyroRaw = clean.substr(20, 4);
+    /* 陀螺仪/坡度 BD
+     * 按《首页陀螺仪坡度显示逻辑》§3 的要求解析：
+     *   - 帧长 26 字符（13 字节），状态位在第 18-20 位，值在第 20-26 位
+     *   - 6 位定长十进制数
+     *   - 负角偏移编码：n >= 100000 时表示负角，做 100000 - n
+     *   - 缩放 1/1000，单位为度，精度 0.001°
+     *   例：尾部 01 113844 → n=113844 → 100000-113844 = -13844 → -13.844°
+     */
+    if (clean.startsWith(prefix(CMDS.gyro)) && clean.length >= 26) {
+      const state = clean.substr(18, 2);
+      if (state === '01') {
+        const digits = clean.substr(20, 6);
+        // 必须是纯数字，否则整帧作废
+        if (/^\d{6}$/.test(digits)) {
+          let n = parseInt(digits, 10);
+          if (n >= 100000) n = 100000 - n; // 负角度偏移还原
+          update.gyro = n / 1000;
+          update.gyroRaw = digits;
+        }
+      }
     }
 
     // 里程 B1：米转公里
