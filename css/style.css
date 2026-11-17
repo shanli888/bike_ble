@@ -856,7 +856,7 @@ body {
 .appbar-icons {
   display: flex;
   align-items: center;
-  gap: 16px;          /* 统一间距 */
+  gap: 10px;          /* 统一间距 */
   flex: none;
 }
 /* 每个图标用固定尺寸的盒子，消除不同宽度导致的视觉间距差异 */
