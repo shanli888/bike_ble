@@ -1381,25 +1381,31 @@ input.slider::-moz-range-thumb {
   border-radius: 2.5px;
 }
 
-/* 点亮格按方向着色（配色按文档 DashColors：蓝 #4AA8FF / 绿 #3DDC8C / 红 #FF0000） */
-.view .bgrid--slope i.on { box-shadow: 0 0 6px currentColor; }
+/* 点亮格按方向着色
+ * 注意：选择器需带上 .card 以提升权重，否则会被上面的
+ * `.view .card--cyan .bgrid i.on`（4 个类）压过，导致永远是蓝色。
+ * 配色按文档 DashColors：蓝 #4AA8FF / 绿 #3DDC8C / 红 #FF0000
+ */
+#cardGyro .bgrid--slope i.on {
+  box-shadow: 0 0 6px currentColor;
+}
 /* 平路/0 附近：蓝 */
-.view .bgrid--slope i[data-tone="flat"] {
+#cardGyro .bgrid--slope i[data-tone="flat"] {
   background: #4aa8ff;
   color: rgba(74, 168, 255, .6);
 }
 /* 下坡：绿（向左） */
-.view .bgrid--slope i[data-tone="down"] {
+#cardGyro .bgrid--slope i[data-tone="down"] {
   background: #3ddc8c;
   color: rgba(61, 220, 140, .6);
 }
 /* 上坡：红（向右） */
-.view .bgrid--slope i[data-tone="up"] {
+#cardGyro .bgrid--slope i[data-tone="up"] {
   background: #ff0000;
   color: rgba(255, 0, 0, .55);
 }
 /* 熄灭：回到灰 */
-.view .bgrid--slope i[data-tone="off"] {
+#cardGyro .bgrid--slope i[data-tone="off"] {
   background: rgba(255, 255, 255, .09);
   box-shadow: none;
 }
