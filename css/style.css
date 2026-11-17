@@ -856,13 +856,13 @@ body {
 .appbar-icons {
   display: flex;
   align-items: center;
-  gap: 10px;          /* 统一间距 */
+  gap: 6px;           /* 统一间距（紧凑） */
   flex: none;
 }
 /* 每个图标用固定尺寸的盒子，消除不同宽度导致的视觉间距差异 */
 .appbar-icons > * {
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
   display: flex;
   align-items: center;
   justify-content: center;
